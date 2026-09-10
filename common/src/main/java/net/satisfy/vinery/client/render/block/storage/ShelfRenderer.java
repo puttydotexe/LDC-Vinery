@@ -2,31 +2,42 @@ package net.satisfy.vinery.client.render.block.storage;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.satisfy.vinery.client.util.ClientUtil;
-import net.satisfy.vinery.core.block.entity.StorageBlockEntity;
 
 public class ShelfRenderer implements StorageTypeRenderer {
     @Override
-    public void render(StorageBlockEntity entity, PoseStack matrices, MultiBufferSource vertexConsumers, NonNullList<ItemStack> itemStacks) {
+    public void submit(
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            StorageRenderData storage,
+            int packedLight
+    ) {
+        poseStack.translate(-0.4, 0.5, 0.25);
+        poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+        poseStack.scale(0.5F, 0.5F, 0.5F);
 
-        matrices.translate(-0.4, 0.5, 0.25);
-        matrices.mulPose(Axis.YP.rotationDegrees(90));
-        matrices.scale(0.5f, 0.5f, 0.5f);
+        for (int i = 0; i < storage.size(); i++) {
+            ItemStackRenderState renderState = storage.getItemModel(i);
 
-        for (int i = 0; i < itemStacks.size(); i++) {
-            ItemStack stack = itemStacks.get(i);
-            if (!stack.isEmpty()) {
-                matrices.pushPose();
-                matrices.translate(0f, 0f, 0.2f * i);
-                matrices.mulPose(Axis.YN.rotationDegrees(22.5f));
-                ClientUtil.renderItem(stack, matrices, vertexConsumers, entity);
-                matrices.popPose();
+            if (renderState.isEmpty()) {
+                continue;
             }
+
+            poseStack.pushPose();
+
+            poseStack.translate(0.0F, 0.0F, 0.2F * i);
+            poseStack.mulPose(Axis.YN.rotationDegrees(22.5F));
+
+            ClientUtil.renderItem(
+                    renderState,
+                    poseStack,
+                    collector,
+                    packedLight
+            );
+
+            poseStack.popPose();
         }
     }
 }

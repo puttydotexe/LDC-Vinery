@@ -13,6 +13,8 @@ import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.satisfy.vinery.core.registry.EntityTypeRegistry;
 import net.satisfy.vinery.core.util.GeneralUtil;
 import org.jetbrains.annotations.NotNull;
@@ -57,18 +59,18 @@ public class StorageBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void loadAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
-        super.loadAdditional(nbt,provider);
-        this.size = nbt.getInt("size");
+    public void loadAdditional(ValueInput nbt) {
+        super.loadAdditional(nbt);
+        this.size = nbt.getIntOr("size", 0);
         this.inventory = NonNullList.withSize(this.size, ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(nbt, this.inventory,provider);
+        ContainerHelper.loadAllItems(nbt, this.inventory);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag nbt,HolderLookup.Provider provider) {
-        ContainerHelper.saveAllItems(nbt, this.inventory,provider);
+    protected void saveAdditional(ValueOutput nbt) {
+        ContainerHelper.saveAllItems(nbt, this.inventory);
         nbt.putInt("size", this.size);
-        super.saveAdditional(nbt,provider);
+        super.saveAdditional(nbt);
     }
 
     @Override

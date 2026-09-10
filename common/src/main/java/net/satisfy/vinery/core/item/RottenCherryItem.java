@@ -4,9 +4,11 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.Snowball;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SnowballItem;
@@ -20,11 +22,15 @@ public class RottenCherryItem extends SnowballItem {
     }
 
     @Override
-    public @NotNull InteractionResultHolder<ItemStack> use(Level world, Player user, InteractionHand hand) {
+    public @NotNull InteractionResult use(Level world, Player user, InteractionHand hand) {
         ItemStack itemStack = user.getItemInHand(hand);
         world.playSound(null, user.getX(), user.getY(), user.getZ(), SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
-        if (!world.isClientSide) {
-            Snowball snowballEntity = new Snowball(world, user);
+        if (!world.isClientSide()) {
+            Snowball snowballEntity = EntityTypes.SNOWBALL.create(world, EntitySpawnReason.LOAD);
+            if (snowballEntity == null) {
+                return InteractionResult.PASS;
+            }
+            snowballEntity.snapTo(user.getX(), user.getEyeY() - 0.1D, user.getZ(), user.getYRot(), user.getXRot());
             snowballEntity.setItem(itemStack);
             snowballEntity.shootFromRotation(user, user.getXRot(), user.getYRot(), 0.0F, 1.5F, 1.0F);
             world.addFreshEntity(snowballEntity);
@@ -33,6 +39,6 @@ public class RottenCherryItem extends SnowballItem {
         if (!user.getAbilities().instabuild) {
             itemStack.shrink(1);
         }
-        return InteractionResultHolder.sidedSuccess(itemStack, world.isClientSide());
+        return world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 }

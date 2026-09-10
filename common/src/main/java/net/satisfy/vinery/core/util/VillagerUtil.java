@@ -2,7 +2,6 @@ package net.satisfy.vinery.core.util;
 
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -15,7 +14,11 @@ public class VillagerUtil {
     public VillagerUtil() {
     }
 
-    public static class SellItemFactory implements VillagerTrades.ItemListing {
+    public interface TradeFactory {
+        MerchantOffer getOffer(Entity entity, RandomSource random);
+    }
+
+    public static class SellItemFactory implements TradeFactory {
         private final ItemStack sell;
         private final int price;
         private final int count;
@@ -57,7 +60,7 @@ public class VillagerUtil {
         }
     }
 
-    public static class BuyForOneEmeraldFactory implements VillagerTrades.ItemListing {
+    public static class BuyForOneEmeraldFactory implements TradeFactory {
         private final Item buy;
         private final int price;
         private final int maxUses;

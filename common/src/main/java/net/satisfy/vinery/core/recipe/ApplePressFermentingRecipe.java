@@ -1,22 +1,20 @@
 package net.satisfy.vinery.core.recipe;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.ExtraCodecs;
-import net.minecraft.util.GsonHelper;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.item.ItemStackTemplate;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.satisfy.vinery.core.recipe.input.ApplePressFermentingRecipeInput;
 import net.satisfy.vinery.core.registry.RecipeTypesRegistry;
@@ -24,11 +22,12 @@ import org.jetbrains.annotations.NotNull;
 
 public class ApplePressFermentingRecipe implements Recipe<ApplePressFermentingRecipeInput> {
     public final Ingredient input;
-    private final ItemStack output;
+    private final ItemStackTemplate output;
     private final boolean requiresBottle;
+    private static final RecipeBookCategory RECIPE_BOOK_CATEGORY = new RecipeBookCategory();
     public static RecipeType<ApplePressFermentingRecipe> Type = RecipeTypesRegistry.APPLE_PRESS_FERMENTING_RECIPE_TYPE.get();
 
-    public ApplePressFermentingRecipe(Ingredient input, ItemStack output, boolean requiresBottle) {
+    public ApplePressFermentingRecipe(Ingredient input, ItemStackTemplate output, boolean requiresBottle) {
         this.input = input;
         this.output = output;
         this.requiresBottle = requiresBottle;
@@ -44,25 +43,22 @@ public class ApplePressFermentingRecipe implements Recipe<ApplePressFermentingRe
     }
 
     @Override
-    public @NotNull ItemStack assemble(ApplePressFermentingRecipeInput container, HolderLookup.Provider registryAccess) {
-        return this.output.copy();
+    public @NotNull ItemStack assemble(ApplePressFermentingRecipeInput container) {
+        return this.output.create();
     }
 
-    @Override
     public @NotNull NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> list = NonNullList.create();
         list.add(input);
         return list;
     }
 
-    @Override
     public boolean canCraftInDimensions(int width, int height) {
         return true;
     }
 
-    @Override
     public @NotNull ItemStack getResultItem(HolderLookup.Provider registryAccess) {
-        return this.output.copy();
+        return this.output.create();
     }
 
     public Ingredient getInput() {
@@ -70,6 +66,10 @@ public class ApplePressFermentingRecipe implements Recipe<ApplePressFermentingRe
     }
 
     public ItemStack getOutput() {
+        return output.create();
+    }
+
+    private ItemStackTemplate getOutputTemplate() {
         return output;
     }
 
@@ -78,12 +78,12 @@ public class ApplePressFermentingRecipe implements Recipe<ApplePressFermentingRe
     }
 
     @Override
-    public @NotNull RecipeSerializer<?> getSerializer() {
+    public @NotNull RecipeSerializer<ApplePressFermentingRecipe> getSerializer() {
         return RecipeTypesRegistry.APPLE_PRESS_FERMENTING_RECIPE_SERIALIZER.get();
     }
 
     @Override
-    public @NotNull RecipeType<?> getType() {
+    public @NotNull RecipeType<ApplePressFermentingRecipe> getType() {
         return RecipeTypesRegistry.APPLE_PRESS_FERMENTING_RECIPE_TYPE.get();
     }
 
@@ -92,37 +92,57 @@ public class ApplePressFermentingRecipe implements Recipe<ApplePressFermentingRe
         return true;
     }
 
-    public static class Serializer implements RecipeSerializer<ApplePressFermentingRecipe> {
+    @Override
+    public boolean showNotification() {
+        return false;
+    }
 
-        private static final MapCodec<Boolean> WINE_BOTTLE_CODEC = RecordCodecBuilder.mapCodec(inst ->
-                inst.group(
-                        Codec.BOOL.fieldOf("required").forGetter(b -> b)
-                ).apply(inst, b -> b)
+    @Override
+    public @NotNull String group() {
+        return "";
+    }
+
+    @Override
+    public @NotNull PlacementInfo placementInfo() {
+        return PlacementInfo.create(this.input);
+    }
+
+    @Override
+    public @NotNull RecipeBookCategory recipeBookCategory() {
+        return RECIPE_BOOK_CATEGORY;
+    }
+
+    public static RecipeSerializer<ApplePressFermentingRecipe> serializer() {
+        return new RecipeSerializer<>(codec(), streamCodec());
+    }
+
+    private static MapCodec<ApplePressFermentingRecipe> codec() {
+        return RecordCodecBuilder.mapCodec(inst -> inst.group(
+                Ingredient.CODEC.fieldOf("input").forGetter(ApplePressFermentingRecipe::getInput),
+                ItemStackTemplate.CODEC.fieldOf("output").forGetter(ApplePressFermentingRecipe::getOutputTemplate),
+                wineBottleCodec().fieldOf("wine_bottle").forGetter(ApplePressFermentingRecipe::isRequiresBottle)
+        ).apply(inst, ApplePressFermentingRecipe::new));
+    }
+
+    private static MapCodec<Boolean> wineBottleCodec() {
+        return RecordCodecBuilder.mapCodec(inst ->
+                inst.group(Codec.BOOL.fieldOf("required").forGetter(required -> required))
+                        .apply(inst, required -> required)
         );
-        @Override
-        public MapCodec<ApplePressFermentingRecipe> codec() {
-            return RecordCodecBuilder.mapCodec(inst->inst.group(
-                   Ingredient.CODEC.fieldOf("input").forGetter(ApplePressFermentingRecipe::getInput),
-                   ItemStack.CODEC.fieldOf("output").forGetter(ApplePressFermentingRecipe::getOutput),
-                    WINE_BOTTLE_CODEC.fieldOf("wine_bottle").forGetter(ApplePressFermentingRecipe::isRequiresBottle)
-            ).apply(inst,ApplePressFermentingRecipe::new));
-        }
+    }
 
-        @Override
-        public StreamCodec<RegistryFriendlyByteBuf, ApplePressFermentingRecipe> streamCodec() {
-            return new StreamCodec<RegistryFriendlyByteBuf, ApplePressFermentingRecipe>() {
-                @Override
-                public ApplePressFermentingRecipe decode(RegistryFriendlyByteBuf buf) {
-                    return new ApplePressFermentingRecipe(Ingredient.CONTENTS_STREAM_CODEC.decode(buf),ItemStack.STREAM_CODEC.decode(buf),buf.readBoolean());
-                }
-
-                @Override
-                public void encode(RegistryFriendlyByteBuf buf, ApplePressFermentingRecipe recipe) {
-                    Ingredient.CONTENTS_STREAM_CODEC.encode(buf,recipe.getInput());
-                    ItemStack.STREAM_CODEC.encode(buf,recipe.getOutput());
+    private static StreamCodec<RegistryFriendlyByteBuf, ApplePressFermentingRecipe> streamCodec() {
+        return StreamCodec.of(
+                (buf, recipe) -> {
+                    Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.getInput());
+                    ItemStackTemplate.STREAM_CODEC.encode(buf, recipe.getOutputTemplate());
                     buf.writeBoolean(recipe.isRequiresBottle());
-                }
-            };
-        }
+                },
+                buf -> new ApplePressFermentingRecipe(
+                        Ingredient.CONTENTS_STREAM_CODEC.decode(buf),
+                        ItemStackTemplate.STREAM_CODEC.decode(buf),
+                        buf.readBoolean()
+                )
+        );
     }
 }

@@ -1,17 +1,16 @@
 package net.satisfy.vinery.core.block;
 
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -39,25 +38,33 @@ public abstract class StorageBlock extends FacingBlock implements EntityBlock {
 
     @Override
     public @NotNull InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
-        ItemStack stack = player.getMainHandItem();
+        return interactWithStorage(state, world, pos, player, ItemStack.EMPTY, hit, false);
+    }
+
+    @Override
+    public @NotNull InteractionResult useItemOn(ItemStack stack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        return interactWithStorage(state, world, pos, player, stack, hit, true);
+    }
+
+    private InteractionResult interactWithStorage(BlockState state, Level world, BlockPos pos, Player player, ItemStack stack, BlockHitResult hit, boolean allowInsert) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (blockEntity instanceof StorageBlockEntity shelfBlockEntity) {
-            Optional<Tuple<Float, Float>> optional = GeneralUtil.getRelativeHitCoordinatesForBlockFace(hit, state.getValue(FACING), unAllowedDirections());
+            Optional<Pair<Float, Float>> optional = GeneralUtil.getRelativeHitCoordinatesForBlockFace(hit, state.getValue(FACING), unAllowedDirections());
             if (optional.isEmpty()) {
                 return InteractionResult.PASS;
             } else {
-                Tuple<Float, Float> ff = optional.get();
-                int i = getSection(ff.getA(), ff.getB());
+                Pair<Float, Float> ff = optional.get();
+                int i = getSection(ff.getFirst(), ff.getSecond());
                 if (i == Integer.MIN_VALUE) {
                     return InteractionResult.PASS;
                 }
                 if (!shelfBlockEntity.getInventory().get(i).isEmpty()) {
                     remove(world, pos, player, shelfBlockEntity, i);
-                    return InteractionResult.sidedSuccess(world.isClientSide);
+                    return world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
                 } else {
-                    if (!stack.isEmpty() && canInsertStack(stack)) {
+                    if (allowInsert && !stack.isEmpty() && canInsertStack(stack)) {
                         add(world, pos, player, shelfBlockEntity, stack, i);
-                        return InteractionResult.sidedSuccess(world.isClientSide);
+                        return world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
                     } else {
                         return InteractionResult.CONSUME;
                     }
@@ -69,7 +76,7 @@ public abstract class StorageBlock extends FacingBlock implements EntityBlock {
     }
 
     public void add(Level level, BlockPos blockPos, Player player, StorageBlockEntity shelfBlockEntity, ItemStack itemStack, int i) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             SoundEvent soundEvent = getAddSound(level, blockPos, player, i);
             shelfBlockEntity.setStack(i, itemStack.split(1));
             level.playSound(null, blockPos, soundEvent, SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -80,7 +87,7 @@ public abstract class StorageBlock extends FacingBlock implements EntityBlock {
         }
     }
     public void remove(Level level, BlockPos blockPos, Player player, StorageBlockEntity shelfBlockEntity, int i) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             ItemStack itemStack = shelfBlockEntity.removeStack(i);
             SoundEvent soundEvent = getRemoveSound(level, blockPos, player, i);
             level.playSound(null, blockPos, soundEvent, SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -100,17 +107,13 @@ public abstract class StorageBlock extends FacingBlock implements EntityBlock {
     }
 
     @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved) {
-        if (!state.is(newState.getBlock())) {
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel world, BlockPos pos, boolean moved) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof StorageBlockEntity shelf) {
-                if (world instanceof ServerLevel) {
-                    Containers.dropContents(world, pos, shelf.getInventory());
-                }
+                Containers.dropContents(world, pos, shelf.getInventory());
                 world.updateNeighbourForOutputSignal(pos, this);
             }
-            super.onRemove(state, world, pos, newState, moved);
-        }
+            super.affectNeighborsAfterRemoval(state, world, pos, moved);
     }
 
     @Override
@@ -120,7 +123,7 @@ public abstract class StorageBlock extends FacingBlock implements EntityBlock {
 
     public abstract int size();
 
-    public abstract ResourceLocation type();
+    public abstract Identifier type();
 
     public abstract Direction[] unAllowedDirections();
 

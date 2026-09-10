@@ -1,6 +1,16 @@
 {
   "replace": false,
   "values": [
+    "vinery:wine_bottle",
+    "vinery:apple_juice",
+    "vinery:red_grapejuice",
+    "vinery:white_grapejuice",
+    "vinery:red_savanna_grapejuice",
+    "vinery:white_savanna_grapejuice",
+    "vinery:red_taiga_grapejuice",
+    "vinery:white_taiga_grapejuice",
+    "vinery:red_jungle_grapejuice",
+    "vinery:white_jungle_grapejuice",
     "vinery:cherry_wine",
     "vinery:red_wine",
     "vinery:bolvar_wine",

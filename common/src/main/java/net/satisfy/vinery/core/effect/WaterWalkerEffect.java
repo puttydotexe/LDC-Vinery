@@ -17,7 +17,7 @@ public class WaterWalkerEffect extends MobEffect
     }
 
     @Override
-    public boolean applyEffectTick(LivingEntity pLivingEntity, int pAmplifier) {
+    public boolean applyEffectTick(ServerLevel level, LivingEntity pLivingEntity, int pAmplifier) {
         if (!(pLivingEntity instanceof Player player && player.isSpectator())) {
             Vec3 pos = pLivingEntity.position();
             Vec3 movement = pLivingEntity.getDeltaMovement();
@@ -27,18 +27,14 @@ public class WaterWalkerEffect extends MobEffect
             if (pLivingEntity.isInWater()) {
                 pLivingEntity.setDeltaMovement(movement.add(0, 0.1, 0));
             } else if (pLivingEntity.level().getFluidState(onPos).is(FluidTags.WATER)) {
-                if (pLivingEntity.level() instanceof ServerLevel level) {
-                    level.sendParticles(ParticleTypes.FALLING_WATER, pos.x(), pos.y() + 0.1D, pos.z(), 10, 0.2, 0.1, 0.2, 1.5);
-                }
+                level.sendParticles(ParticleTypes.FALLING_WATER, pos.x(), pos.y() + 0.1D, pos.z(), 10, 0.2, 0.1, 0.2, 1.5);
                 pLivingEntity.setDeltaMovement(movement.x(), Math.max(movement.y(), 0D), movement.z());
                 pLivingEntity.setOnGround(true);
             } else if (pLivingEntity.level().getFluidState(futureBlockPos).is(FluidTags.WATER) && movement.y() > -0.8) {
-                if (pLivingEntity.level() instanceof ServerLevel level) {
-                    level.sendParticles(ParticleTypes.FALLING_WATER, pos.x(), pos.y() + 0.1D, pos.z(), 10, 0.2, 0.1, 0.2, 1.5);
-                }
+                level.sendParticles(ParticleTypes.FALLING_WATER, pos.x(), pos.y() + 0.1D, pos.z(), 10, 0.2, 0.1, 0.2, 1.5);
                 pLivingEntity.setDeltaMovement(movement.x(), Math.max(movement.y(), movement.y() * 0.5), movement.z());
             }
-            return super.applyEffectTick(pLivingEntity, pAmplifier);
+            return super.applyEffectTick(level, pLivingEntity, pAmplifier);
         }
         return false;
     }

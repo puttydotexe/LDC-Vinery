@@ -2,51 +2,49 @@ package net.satisfy.vinery.client.render.block.storage;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.block.BlockModelRenderState;
 import net.satisfy.vinery.client.util.ClientUtil;
-import net.satisfy.vinery.core.block.WineBottleBlock;
-import net.satisfy.vinery.core.block.entity.StorageBlockEntity;
 
 public class FourBottleRenderer implements StorageTypeRenderer {
     @Override
-    public void render(StorageBlockEntity entity, PoseStack matrices, MultiBufferSource vertexConsumers, NonNullList<ItemStack> itemStacks) {
-        matrices.translate(-0.13, 0.335, 0.125);
-        matrices.scale(0.9f, 0.9f, 0.9f);
-        for (int i = 0; i < itemStacks.size(); i++) {
-            ItemStack stack = itemStacks.get(i);
-            if (!stack.isEmpty() && stack.getItem() instanceof BlockItem blockItem) {
-                matrices.pushPose();
-                if(i == 0){
-                    matrices.translate(-0.35f, 0, 0f);
-                }
-                else if(i == 1){
-                    matrices.translate(0, -0.33f, 0f);
-                }
-                else if(i == 2){
-                    matrices.translate(-0.7f, -0.33f, 0f);
-                }
-                else if(i == 3){
-                    matrices.translate(-0.35f, -0.66f, 0f);
-                }
-                else {
-                    matrices.popPose();
-                    continue;
-                }
-                matrices.mulPose(Axis.XN.rotationDegrees(90));
+    public void submit(
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            StorageRenderData storage,
+            int packedLight
+    ) {
+        poseStack.translate(-0.13, 0.335, 0.125);
+        poseStack.scale(0.9F, 0.9F, 0.9F);
 
-                BlockState state = blockItem.getBlock().defaultBlockState();
-                if (state.hasProperty(WineBottleBlock.FAKE_MODEL)) {
-                    state = state.setValue(WineBottleBlock.FAKE_MODEL, false);
-                }
-                ClientUtil.renderBlock(state, matrices, vertexConsumers, entity);
-                matrices.popPose();
+        int count = Math.min(storage.size(), 4);
+
+        for (int i = 0; i < count; i++) {
+            BlockModelRenderState renderState = storage.getBlockModel(i);
+
+            if (renderState.isEmpty()) {
+                continue;
             }
+
+            poseStack.pushPose();
+
+            switch (i) {
+                case 0 -> poseStack.translate(-0.35F, 0.0F, 0.0F);
+                case 1 -> poseStack.translate(0.0F, -0.33F, 0.0F);
+                case 2 -> poseStack.translate(-0.7F, -0.33F, 0.0F);
+                case 3 -> poseStack.translate(-0.35F, -0.66F, 0.0F);
+            }
+
+            poseStack.mulPose(Axis.XN.rotationDegrees(90.0F));
+
+            ClientUtil.renderBlock(
+                    renderState,
+                    poseStack,
+                    collector,
+                    packedLight
+            );
+
+            poseStack.popPose();
         }
     }
 }

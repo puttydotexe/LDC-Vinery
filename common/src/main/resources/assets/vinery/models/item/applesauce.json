@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "vinery:item/applesauce"
+    "layer0": "vinery:item/mash"
   }
 }

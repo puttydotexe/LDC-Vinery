@@ -1,16 +1,19 @@
 package net.satisfy.vinery.core.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerEntity;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -55,18 +58,18 @@ public class ChairEntity extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
-        if (tag.contains("spx")) {
-            int x = tag.getInt("spx");
-            int y = tag.getInt("spy");
-            int z = tag.getInt("spz");
+    protected void readAdditionalSaveData(ValueInput tag) {
+        if (tag.getInt("spx").isPresent()) {
+            int x = tag.getIntOr("spx", 0);
+            int y = tag.getIntOr("spy", 0);
+            int z = tag.getIntOr("spz", 0);
             this.seatPos = new BlockPos(x, y, z);
             this.seatPosInit = true;
         }
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
+    protected void addAdditionalSaveData(ValueOutput tag) {
         BlockPos p = this.seatPos != null ? this.seatPos : this.blockPosition();
         tag.putInt("spx", p.getX());
         tag.putInt("spy", p.getY());
@@ -79,7 +82,12 @@ public class ChairEntity extends Entity {
     }
 
     @Override
-    public boolean isControlledByLocalInstance() {
+    protected boolean isLocalClientAuthoritative() {
+        return false;
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
         return false;
     }
 
@@ -93,8 +101,11 @@ public class ChairEntity extends Entity {
             yaw = s.getValue(BlockStateProperties.FACING).toYRot();
         } else {
             for (Property<?> prop : s.getProperties()) {
-                if (prop.getName().equals("facing") && prop instanceof net.minecraft.world.level.block.state.properties.DirectionProperty dir) {
-                    yaw = s.getValue(dir).toYRot();
+                if (prop.getName().equals("facing") && prop instanceof net.minecraft.world.level.block.state.properties.EnumProperty<?> dir) {
+                    Object value = s.getValue(dir);
+                    if (value instanceof net.minecraft.core.Direction direction) {
+                        yaw = direction.toYRot();
+                    }
                     break;
                 }
             }
@@ -139,7 +150,7 @@ public class ChairEntity extends Entity {
         if (!getPassengers().isEmpty()) {
             for (Entity e : getPassengers()) {
                 if (e instanceof Player p) {
-                    if (!level().isClientSide) p.setDeltaMovement(Vec3.ZERO);
+                    if (!level().isClientSide()) p.setDeltaMovement(Vec3.ZERO);
                     float yaw = getYRot();
                     p.setYBodyRot(yaw);
                     p.yBodyRotO = yaw;

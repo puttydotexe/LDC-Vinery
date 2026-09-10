@@ -6,6 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -19,7 +20,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
@@ -39,7 +40,7 @@ import java.util.function.Supplier;
 
 @SuppressWarnings("deprecation")
 public class ApplePressBlock extends BaseEntityBlock {
-	public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+	public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 	public static final EnumProperty<DoubleBlockHalf> HALF = EnumProperty.create("half", DoubleBlockHalf.class);
 	public static final Map<Direction, VoxelShape> TOP_SHAPES = new HashMap<>();
 	public static final Map<Direction, VoxelShape> BOTTOM_SHAPES = new HashMap<>();
@@ -60,28 +61,26 @@ public class ApplePressBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean isMoving) {
-		if (!world.isClientSide) {
-			if (state.getValue(HALF) == DoubleBlockHalf.UPPER && state.getBlock() != newState.getBlock()) {
+	protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel world, BlockPos pos, boolean isMoving) {
+			if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
 				BlockPos lowerPos = pos.below();
 				BlockState lowerState = world.getBlockState(lowerPos);
 				if (lowerState.getBlock() == this && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
 					world.setBlock(lowerPos, Blocks.AIR.defaultBlockState(), 35);
 				}
-			} else if (state.getValue(HALF) == DoubleBlockHalf.LOWER && state.getBlock() != newState.getBlock()) {
+			} else if (state.getValue(HALF) == DoubleBlockHalf.LOWER) {
 				BlockPos upperPos = pos.above();
 				BlockState upperState = world.getBlockState(upperPos);
 				if (upperState.getBlock() == this && upperState.getValue(HALF) == DoubleBlockHalf.UPPER) {
 					world.setBlock(upperPos, Blocks.AIR.defaultBlockState(), 35);
 				}
 			}
-		}
-		super.onRemove(state, world, pos, newState, isMoving);
+		super.affectNeighborsAfterRemoval(state, world, pos, isMoving);
 	}
 
 	@Override
 	public BlockState playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
-		if (!world.isClientSide) {
+		if (!world.isClientSide()) {
 			BlockPos otherPartPos;
 			BlockState otherPartState;
 
@@ -125,7 +124,7 @@ public class ApplePressBlock extends BaseEntityBlock {
 			return InteractionResult.PASS;
 		}
 
-		if (!world.isClientSide) {
+		if (!world.isClientSide()) {
 			MenuProvider screenHandlerFactory = state.getMenuProvider(world, pos);
 			if (screenHandlerFactory != null) {
 				player.openMenu(screenHandlerFactory);
@@ -156,7 +155,7 @@ public class ApplePressBlock extends BaseEntityBlock {
 	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
 		BlockGetter world = ctx.getLevel();
 		BlockPos pos = ctx.getClickedPos();
-		if (pos.getY() < world.getMaxBuildHeight() - 1 && world.getBlockState(pos.above()).canBeReplaced(ctx)) {
+		if (pos.getY() < world.getMaxY() - 1 && world.getBlockState(pos.above()).canBeReplaced(ctx)) {
 			return this.defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite()).setValue(HALF, DoubleBlockHalf.LOWER);
 		}
 		return null;

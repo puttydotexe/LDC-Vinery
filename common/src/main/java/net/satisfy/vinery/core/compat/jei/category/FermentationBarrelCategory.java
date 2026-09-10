@@ -9,8 +9,7 @@ import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.satisfy.vinery.client.gui.FermentationBarrelGui;
 import net.satisfy.vinery.core.Vinery;
@@ -54,10 +53,19 @@ public class FermentationBarrelCategory implements IRecipeCategory<FermentationB
         return this.localizedName;
     }
 
-    @Override
     @SuppressWarnings("removal")
     public @NotNull IDrawable getBackground() {
         return this.background;
+    }
+
+    @Override
+    public int getWidth() {
+        return WIDTH;
+    }
+
+    @Override
+    public int getHeight() {
+        return HEIGHT;
     }
 
     @Override
@@ -99,17 +107,14 @@ public class FermentationBarrelCategory implements IRecipeCategory<FermentationB
     }
 
     @Override
-    public void draw(FermentationBarrelRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
+    public void draw(FermentationBarrelRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphicsExtractor guiGraphics, double mouseX, double mouseY) {
 
         IRecipeCategory.super.draw(recipe, recipeSlotsView, guiGraphics, mouseX, mouseY);
 
         if (recipe.getJuiceData().amount() > 0) {
             FermentationBarrelGui.drawJuiceBar(guiGraphics, recipe.getJuiceData().type(), recipe.getJuiceData().amount(), 56, 31);
 
-            if (isMouseOverFluidArea((int) mouseX, (int) mouseY)) {
-                Component tooltip = getFluidTooltip(recipe.getJuiceData().type(), recipe.getJuiceData().amount());
-                guiGraphics.renderTooltip(Minecraft.getInstance().font, tooltip, (int) mouseX, (int) mouseY);
-            }
+            getFluidTooltip(recipe.getJuiceData().type(), recipe.getJuiceData().amount());
         }
     }
 }

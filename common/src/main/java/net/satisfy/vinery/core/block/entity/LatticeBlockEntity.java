@@ -1,11 +1,12 @@
 package net.satisfy.vinery.core.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.satisfy.vinery.core.registry.EntityTypeRegistry;
 import net.satisfy.vinery.core.registry.GrapeTypeRegistry;
 import net.satisfy.vinery.core.util.GrapeType;
@@ -38,7 +39,7 @@ public class LatticeBlockEntity extends BlockEntity {
     public void setGrapeType(GrapeType grape) {
         this.grape = grape;
         if (!initialized && level != null) {
-            this.showHanging = level.random.nextFloat() < 0.15f;
+            this.showHanging = level.getRandom().nextFloat() < 0.15f;
             this.initialized = true;
         }
         setChanged();
@@ -46,25 +47,27 @@ public class LatticeBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag,provider);
-        this.age = tag.getInt("Age");
-        this.grape = GrapeType.fromString(tag.getString("Grape"));
-        this.showHanging = tag.getBoolean("ShowHanging");
+    public void loadAdditional(ValueInput tag) {
+        super.loadAdditional(tag);
+        this.age = tag.getIntOr("Age", 0);
+        this.grape = GrapeType.fromString(tag.getStringOr("Grape", GrapeTypeRegistry.NONE.getSerializedName()));
+        this.showHanging = tag.getBooleanOr("ShowHanging", false);
         this.initialized = true;
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag,HolderLookup.Provider provider) {
+    protected void saveAdditional(ValueOutput tag) {
         tag.putInt("Age", age);
         tag.putString("Grape", grape.getSerializedName());
         tag.putBoolean("ShowHanging", showHanging);
     }
 
     @Override
-    public @NotNull CompoundTag getUpdateTag(HolderLookup.Provider provider) {
+    public @NotNull CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider provider) {
         CompoundTag tag = new CompoundTag();
-        saveAdditional(tag,provider);
+        tag.putInt("Age", age);
+        tag.putString("Grape", grape.getSerializedName());
+        tag.putBoolean("ShowHanging", showHanging);
         return tag;
     }
 
@@ -74,7 +77,7 @@ public class LatticeBlockEntity extends BlockEntity {
     }
 
     private void sync() {
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }

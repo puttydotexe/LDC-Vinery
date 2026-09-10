@@ -4,17 +4,18 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -44,7 +45,16 @@ public class WineBottleBlock extends StorageBlock {
     }
 
     @Override
-    public @NotNull ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    public @NotNull InteractionResult useItemOn(ItemStack stack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        return interactWithBottle(stack, world, pos, player);
+    }
+
+    @Override
+    public @NotNull InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
+        return interactWithBottle(ItemStack.EMPTY, world, pos, player);
+    }
+
+    private InteractionResult interactWithBottle(ItemStack stack, Level world, BlockPos pos, Player player) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
 
         if(blockEntity instanceof StorageBlockEntity wineEntity){
@@ -52,7 +62,7 @@ public class WineBottleBlock extends StorageBlock {
 
             if (canInsertStack(stack) && willFitStack(stack, inventory)) {
                 int posInE = getFirstEmptySlot(inventory);
-                if(posInE == Integer.MIN_VALUE) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+                if(posInE == Integer.MIN_VALUE) return InteractionResult.PASS;
                 if(!world.isClientSide()){
                     wineEntity.setStack(posInE, stack.split(1));
                     if (player.isCreative()) {
@@ -60,10 +70,10 @@ public class WineBottleBlock extends StorageBlock {
                     }
                     world.playSound(null, pos, SoundEvents.BOTTLE_FILL, SoundSource.BLOCKS, 1.0F, 1.0F);
                 }
-                return ItemInteractionResult.sidedSuccess(world.isClientSide());
+                return world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
             } else if (stack.isEmpty() && !isEmpty(inventory)) {
                 int posInE = getLastFullSlot(inventory);
-                if(posInE == Integer.MIN_VALUE) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+                if(posInE == Integer.MIN_VALUE) return InteractionResult.PASS;
                 if(!world.isClientSide()){
                     ItemStack wine = wineEntity.removeStack(posInE);
                     if (!player.getInventory().add(wine)) {
@@ -74,10 +84,10 @@ public class WineBottleBlock extends StorageBlock {
                     }
                     world.playSound(null, pos, SoundEvents.BOTTLE_EMPTY, SoundSource.BLOCKS, 1.0F, 1.0F);
                 }
-                return ItemInteractionResult.sidedSuccess(world.isClientSide());
+                return world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
             }
         }
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.PASS;
     }
 
     public boolean isEmpty(NonNullList<ItemStack> inventory){
@@ -114,24 +124,24 @@ public class WineBottleBlock extends StorageBlock {
     }
 
     @Override
-    public @NotNull BlockState updateShape(BlockState blockState, Direction direction, BlockState blockState2, LevelAccessor levelAccessor, BlockPos blockPos, BlockPos blockPos2) {
-        if (direction == Direction.DOWN && !blockState.canSurvive(levelAccessor, blockPos)) {
-            levelAccessor.destroyBlock(blockPos, true);
+    public @NotNull BlockState updateShape(BlockState blockState, LevelReader levelReader, ScheduledTickAccess scheduledTickAccess, BlockPos blockPos, Direction direction, BlockPos blockPos2, BlockState blockState2, RandomSource randomSource) {
+        if (direction == Direction.DOWN && levelReader instanceof Level level && !blockState.canSurvive(levelReader, blockPos)) {
+            level.destroyBlock(blockPos, true);
         }
-        return super.updateShape(blockState, direction, blockState2, levelAccessor, blockPos, blockPos2);
+        return super.updateShape(blockState, levelReader, scheduledTickAccess, blockPos, direction, blockPos2, blockState2, randomSource);
     }
     @Override
     public int size() {
         return maxCount;
     }
     @Override
-    public ResourceLocation type() {
+    public Identifier type() {
         return StorageTypeRegistry.WINE_BOTTLE;
     }
 
     @Override
     public boolean canInsertStack(ItemStack stack) {
-        return stack.is(TagRegistry.SMALL_BOTTLE);
+        return stack.is(TagRegistry.SMALL_BOTTLE) || stack.is(TagRegistry.LARGE_BOTTLE);
     }
 
     public boolean willFitStack(ItemStack itemStack, NonNullList<ItemStack> inventory) {

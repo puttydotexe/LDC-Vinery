@@ -36,7 +36,7 @@ public abstract class StemBlock extends Block implements BonemealableBlock {
     }
 
     public void dropGrapes(Level world, BlockState state, BlockPos pos, Direction direction) {
-        final int x = 1 + world.random.nextInt(this.isMature(state) ? 2 : 1);
+        final int x = 1 + world.getRandom().nextInt(this.isMature(state) ? 2 : 1);
         final int bonus = this.isMature(state) ? 2 : 1;
         Item grape = state.getValue(GRAPE).getFruit();
         ItemStack stack = new ItemStack(grape, x + bonus);
@@ -44,7 +44,7 @@ public abstract class StemBlock extends Block implements BonemealableBlock {
         if (direction == null) popResource(world, pos, stack);
         else GeneralUtil.popResourceFromFace(world, pos, direction, stack);
 
-        world.playSound(null, pos, SoundEvents.SWEET_BERRY_BUSH_PICK_BERRIES, SoundSource.BLOCKS, 1.0F, 0.8F + world.random.nextFloat() * 0.4F);
+        world.playSound(null, pos, SoundEvents.SWEET_BERRY_BUSH_PICK_BERRIES, SoundSource.BLOCKS, 1.0F, 0.8F + world.getRandom().nextFloat() * 0.4F);
     }
 
     public void dropGrapeSeeds(Level world, BlockState state, BlockPos pos, Direction direction) {
@@ -61,7 +61,7 @@ public abstract class StemBlock extends Block implements BonemealableBlock {
         if (age > 3) {
             dropGrapes(world, state, pos, hit.getDirection());
             world.setBlock(pos, state.setValue(AGE, 2), 2);
-            return InteractionResult.sidedSuccess(world.isClientSide);
+            return (world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER);
         }
         else {
             return InteractionResult.PASS;

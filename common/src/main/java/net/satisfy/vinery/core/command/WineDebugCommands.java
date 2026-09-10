@@ -6,6 +6,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.NameAndId;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.satisfy.vinery.core.components.WineYearComponent;
@@ -18,7 +19,7 @@ public final class WineDebugCommands {
     public static void init() {
         CommandRegistrationEvent.EVENT.register((dispatcher, registryAccess, selection) -> dispatcher.register(
                 Commands.literal("wine")
-                        .requires(source -> source.hasPermission(2) && source.getEntity() instanceof ServerPlayer)
+                        .requires(source -> source.getEntity() instanceof ServerPlayer player && source.getServer().getPlayerList().isOp(new NameAndId(player.getGameProfile())))
                         .then(Commands.literal("age")
                                 .then(Commands.argument("years", IntegerArgumentType.integer(0, 100000))
                                         .executes(ctx -> ageHeld(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "years")))))
@@ -39,7 +40,7 @@ public final class WineDebugCommands {
             return 0;
         }
 
-        Level level = player.serverLevel();
+        Level level = player.level();
         WineYearComponent component = getOrCreateComponent(stack, level);
 
         int currentDay = WineYears.getDays(level);
@@ -74,7 +75,7 @@ public final class WineDebugCommands {
             return 0;
         }
 
-        Level level = player.serverLevel();
+        Level level = player.level();
         WineYearComponent component = getOrCreateComponent(stack, level);
 
         int ageYears = WineYears.getWineAgeYears(stack, level);

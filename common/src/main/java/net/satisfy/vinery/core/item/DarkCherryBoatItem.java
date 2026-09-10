@@ -2,11 +2,11 @@ package net.satisfy.vinery.core.item;
 
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
 import net.minecraft.world.item.BoatItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
@@ -17,6 +17,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.satisfy.vinery.core.entity.DarkCherryBoatEntity;
 import net.satisfy.vinery.core.entity.DarkCherryChestBoatEntity;
+import net.satisfy.vinery.core.registry.EntityTypeRegistry;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -28,16 +29,16 @@ public class DarkCherryBoatItem extends BoatItem {
     private final boolean hasChest;
 
     public DarkCherryBoatItem(boolean hasChest, DarkCherryBoatEntity.Type type, Properties pProperties) {
-        super(hasChest, null, pProperties);
+        super(hasChest ? EntityTypeRegistry.DARK_CHERRY_CHEST_BOAT.get() : EntityTypeRegistry.DARK_CHERRY_BOAT.get(), pProperties);
         this.hasChest = hasChest;
         this.type = type;
     }
 
-    public InteractionResultHolder<ItemStack> use(Level pLevel, Player pPlayer, InteractionHand pHand) {
+    public InteractionResult use(Level pLevel, Player pPlayer, InteractionHand pHand) {
         ItemStack itemstack = pPlayer.getItemInHand(pHand);
         HitResult hitresult = getPlayerPOVHitResult(pLevel, pPlayer, ClipContext.Fluid.ANY);
         if (hitresult.getType() == HitResult.Type.MISS) {
-            return InteractionResultHolder.pass(itemstack);
+            return InteractionResult.PASS;
         } else {
             Vec3 vec3 = pPlayer.getViewVector(1.0F);
             List<Entity> list = pLevel.getEntities(pPlayer, pPlayer.getBoundingBox().expandTowards(vec3.scale(5.0D)).inflate(1.0D), ENTITY_PREDICATE);
@@ -47,13 +48,13 @@ public class DarkCherryBoatItem extends BoatItem {
                 for(Entity entity : list) {
                     AABB aabb = entity.getBoundingBox().inflate((double)entity.getPickRadius());
                     if (aabb.contains(vec31)) {
-                        return InteractionResultHolder.pass(itemstack);
+                        return InteractionResult.PASS;
                     }
                 }
             }
 
             if (hitresult.getType() == HitResult.Type.BLOCK) {
-                Boat boat = this.getBoat(pLevel, hitresult);
+                AbstractBoat boat = this.getBoat(pLevel, hitresult);
                 if(boat instanceof DarkCherryChestBoatEntity chestBoat) {
                     chestBoat.setWoodType(this.type);
                 } else if(boat instanceof DarkCherryBoatEntity) {
@@ -61,9 +62,9 @@ public class DarkCherryBoatItem extends BoatItem {
                 }
                 boat.setYRot(pPlayer.getYRot());
                 if (!pLevel.noCollision(boat, boat.getBoundingBox())) {
-                    return InteractionResultHolder.fail(itemstack);
+                    return InteractionResult.FAIL;
                 } else {
-                    if (!pLevel.isClientSide) {
+                    if (!pLevel.isClientSide()) {
                         pLevel.addFreshEntity(boat);
                         pLevel.gameEvent(pPlayer, GameEvent.ENTITY_PLACE, hitresult.getLocation());
                         if (!pPlayer.getAbilities().instabuild) {
@@ -72,15 +73,15 @@ public class DarkCherryBoatItem extends BoatItem {
                     }
 
                     pPlayer.awardStat(Stats.ITEM_USED.get(this));
-                    return InteractionResultHolder.sidedSuccess(itemstack, pLevel.isClientSide());
+                    return pLevel.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
                 }
             } else {
-                return InteractionResultHolder.pass(itemstack);
+                return InteractionResult.PASS;
             }
         }
     }
 
-    private Boat getBoat(Level level, HitResult hitResult) {
+    private AbstractBoat getBoat(Level level, HitResult hitResult) {
         return this.hasChest ? new DarkCherryChestBoatEntity(level, hitResult.getLocation().x, hitResult.getLocation().y, hitResult.getLocation().z) : new DarkCherryBoatEntity(level, hitResult.getLocation().x, hitResult.getLocation().y, hitResult.getLocation().z);
     }
 }

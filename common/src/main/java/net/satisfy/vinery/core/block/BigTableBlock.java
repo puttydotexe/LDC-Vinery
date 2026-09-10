@@ -18,7 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -47,13 +47,13 @@ public class BigTableBlock extends HorizontalDirectionalBlock {
 		return shape;
 	};
 
-	public static final Map<Direction, VoxelShape> SHAPE = net.minecraft.Util.make(new HashMap<>(), map -> {
+	public static final Map<Direction, VoxelShape> SHAPE = net.minecraft.util.Util.make(new HashMap<>(), map -> {
 		for (Direction direction : Direction.Plane.HORIZONTAL) {
 			map.put(direction, GeneralUtil.rotateShape(Direction.EAST, direction, voxelShapeSupplier.get()));
 		}
 	});
 	
-	public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	
 	public BigTableBlock(Properties settings) {
 		super(settings);
@@ -65,11 +65,11 @@ public class BigTableBlock extends HorizontalDirectionalBlock {
 		return simpleCodec(BigTableBlock::new);
 	}
 
-	public @NotNull BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+	public @NotNull BlockState updateShape(BlockState state, net.minecraft.world.level.LevelReader world, net.minecraft.world.level.ScheduledTickAccess scheduledTickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, net.minecraft.util.RandomSource random) {
 		if (direction == getDirectionTowardsOtherPart(state.getValue(PART), state.getValue(FACING))) {
 			return neighborState.is(this) && neighborState.getValue(PART) != state.getValue(PART) ? state : Blocks.AIR.defaultBlockState();
 		} else {
-			return super.updateShape(state, direction, neighborState, world, pos, neighborPos);
+			return super.updateShape(state, world, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
 		}
 	}
 	
@@ -78,7 +78,7 @@ public class BigTableBlock extends HorizontalDirectionalBlock {
 	}
 
 	public BlockState playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
-		if (!world.isClientSide && player.isCreative()) {
+		if (!world.isClientSide() && player.isCreative()) {
 			removeOtherPart(world, pos, state, player);
 		}
 
@@ -106,7 +106,7 @@ public class BigTableBlock extends HorizontalDirectionalBlock {
 
 	public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
 		super.setPlacedBy(world, pos, state, placer, itemStack);
-		if (!world.isClientSide) {
+		if (!world.isClientSide()) {
 			placeOtherPart(world, pos, state);
 		}
 	}
@@ -119,7 +119,7 @@ public class BigTableBlock extends HorizontalDirectionalBlock {
 	private void placeOtherPart(Level world, BlockPos pos, BlockState state) {
 		BlockPos blockPos = pos.relative(state.getValue(FACING));
 		world.setBlock(blockPos, state.setValue(PART, BedPart.HEAD), Block.UPDATE_ALL);
-		world.blockUpdated(pos, Blocks.AIR);
+		world.updateNeighborsAt(pos, Blocks.AIR, null);
 		state.updateNeighbourShapes(world, pos, Block.UPDATE_ALL);
 	}
 	

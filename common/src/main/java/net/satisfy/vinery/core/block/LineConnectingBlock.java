@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.satisfy.vinery.core.util.GeneralUtil;
@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("deprecation")
 public class LineConnectingBlock extends Block {
-    public static final DirectionProperty FACING;
+    public static final EnumProperty<Direction> FACING;
     public static final EnumProperty<GeneralUtil.LineConnectingType> TYPE;
 
     public LineConnectingBlock(BlockBehaviour.Properties settings) {
@@ -52,7 +52,7 @@ public class LineConnectingBlock extends Block {
     }
 
     public void neighborChanged(BlockState state, Level world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
-        if (!world.isClientSide) {
+        if (!world.isClientSide()) {
             Direction facing = state.getValue(FACING);
             GeneralUtil.LineConnectingType type = switch (facing) {
                 case EAST -> this.getType(state, world.getBlockState(pos.south()), world.getBlockState(pos.north()));

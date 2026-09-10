@@ -1,5 +1,6 @@
 package net.satisfy.vinery.core.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -32,12 +33,13 @@ import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("deprecation")
 public class DarkCherryLeavesBlock extends LeavesBlock implements BonemealableBlock {
+    public static final MapCodec<DarkCherryLeavesBlock> CODEC = simpleCodec(DarkCherryLeavesBlock::new);
     public static final BooleanProperty CAN_GROW_CHERRIES = BooleanProperty.create("can_grow_cherries");
     public static final BooleanProperty HAS_CHERRIES = BooleanProperty.create("has_cherries");
     public static final IntegerProperty AGE = IntegerProperty.create("age", 0, 3);
 
     public DarkCherryLeavesBlock(Properties settings) {
-        super(settings);
+        super(0.01F, settings);
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(PERSISTENT, false)
                 .setValue(DISTANCE, 7)
@@ -45,6 +47,15 @@ public class DarkCherryLeavesBlock extends LeavesBlock implements BonemealableBl
                 .setValue(HAS_CHERRIES, false)
                 .setValue(AGE, 0)
                 .setValue(WATERLOGGED, false));
+    }
+
+    @Override
+    public MapCodec<DarkCherryLeavesBlock> codec() {
+        return CODEC;
+    }
+
+    @Override
+    protected void spawnFallingLeavesParticle(Level level, BlockPos pos, RandomSource random) {
     }
 
     @Override
@@ -73,7 +84,7 @@ public class DarkCherryLeavesBlock extends LeavesBlock implements BonemealableBl
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
-        boolean canGrowCherries = ctx.getLevel().random.nextFloat() < 0.3f;
+        boolean canGrowCherries = ctx.getLevel().getRandom().nextFloat() < 0.3f;
         return updateDistance(this.defaultBlockState()
                 .setValue(PERSISTENT, true)
                 .setValue(CAN_GROW_CHERRIES, canGrowCherries)
@@ -147,7 +158,7 @@ public class DarkCherryLeavesBlock extends LeavesBlock implements BonemealableBl
     }
 
     @Override
-    public @NotNull BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+    public @NotNull BlockState updateShape(BlockState state, net.minecraft.world.level.LevelReader world, net.minecraft.world.level.ScheduledTickAccess scheduledTickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, net.minecraft.util.RandomSource random) {
         return updateDistance(state, world, pos);
     }
 
@@ -155,7 +166,7 @@ public class DarkCherryLeavesBlock extends LeavesBlock implements BonemealableBl
         return neighborState.getBlock() instanceof LeavesBlock ? neighborState.getValue(DISTANCE) : (neighborState.is(BlockTags.LOGS) ? 0 : 7);
     }
 
-    private BlockState updateDistance(BlockState state, LevelAccessor world, BlockPos pos) {
+    private BlockState updateDistance(BlockState state, net.minecraft.world.level.LevelReader world, BlockPos pos) {
         int minDistance = 7;
         for (Direction dir : Direction.values()) {
             BlockState neighbor = world.getBlockState(pos.relative(dir));
@@ -165,7 +176,6 @@ public class DarkCherryLeavesBlock extends LeavesBlock implements BonemealableBl
         return state.setValue(DISTANCE, minDistance);
     }
 
-    @Override
     public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
         return 1;
     }

@@ -9,7 +9,6 @@ import me.shedaniel.rei.api.client.gui.widgets.Widgets;
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.util.EntryStacks;
-import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -18,6 +17,7 @@ import net.satisfy.vinery.core.util.JuiceUtil;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 public class FermentationBarrelCategory implements DisplayCategory<FermentationBarrelDisplay> {
 
@@ -85,8 +85,7 @@ public class FermentationBarrelCategory implements DisplayCategory<FermentationB
     private ItemStack getJuiceItemForType(String juiceType) {
         Optional<ItemStack> juiceItem = JuiceUtil.RED_JUICE_TAGS.entrySet().stream()
                 .filter(entry -> juiceType.equals("red_" + entry.getValue()))
-                .flatMap(entry -> BuiltInRegistries.ITEM.getTag(entry.getKey()).stream())
-                .flatMap(HolderSet.ListBacked::stream)
+                .flatMap(entry -> StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(entry.getKey()).spliterator(), false))
                 .findFirst()
                 .map(ItemStack::new);
 
@@ -96,8 +95,7 @@ public class FermentationBarrelCategory implements DisplayCategory<FermentationB
 
         juiceItem = JuiceUtil.WHITE_JUICE_TAGS.entrySet().stream()
                 .filter(entry -> juiceType.equals("white_" + entry.getValue()))
-                .flatMap(entry -> BuiltInRegistries.ITEM.getTag(entry.getKey()).stream())
-                .flatMap(HolderSet.ListBacked::stream)
+                .flatMap(entry -> StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(entry.getKey()).spliterator(), false))
                 .findFirst()
                 .map(ItemStack::new);
 

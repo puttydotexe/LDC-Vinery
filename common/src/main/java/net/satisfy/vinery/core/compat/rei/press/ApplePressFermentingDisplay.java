@@ -1,6 +1,7 @@
 package net.satisfy.vinery.core.compat.rei.press;
 
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
+import me.shedaniel.rei.api.common.display.DisplaySerializer;
 import me.shedaniel.rei.api.common.display.basic.BasicDisplay;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
@@ -31,5 +32,9 @@ public class ApplePressFermentingDisplay extends BasicDisplay {
         return APPLE_PRESS_DISPLAY;
     }
 
+    @Override
+    public DisplaySerializer<? extends ApplePressFermentingDisplay> getSerializer() {
+        return null;
+    }
 
 }

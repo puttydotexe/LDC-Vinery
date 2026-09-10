@@ -11,9 +11,9 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.satisfy.vinery.core.recipe.ApplePressFermentingRecipe;
@@ -41,7 +41,7 @@ public class ApplePressFermentingCategory implements IRecipeCategory<ApplePressF
     private final Component title;
 
     public ApplePressFermentingCategory(IGuiHelper helper) {
-        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath("vinery", "textures/gui/apple_press_gui.png");
+        Identifier texture = Identifier.fromNamespaceAndPath("vinery", "textures/gui/apple_press_gui.png");
         this.background = helper.createDrawable(texture, X_OFFSET, Y_OFFSET, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
         this.arrow = helper.drawableBuilder(texture, ARROW_U, ARROW_V, ARROW_WIDTH, ARROW_HEIGHT)
                 .buildAnimated(MAX_TIME, IDrawableAnimated.StartDirection.BOTTOM, false);
@@ -63,10 +63,19 @@ public class ApplePressFermentingCategory implements IRecipeCategory<ApplePressF
     }
 
     @NotNull
-    @Override
     @SuppressWarnings("removal")
     public IDrawable getBackground() {
         return background;
+    }
+
+    @Override
+    public int getWidth() {
+        return BACKGROUND_WIDTH;
+    }
+
+    @Override
+    public int getHeight() {
+        return BACKGROUND_HEIGHT;
     }
 
     @Override
@@ -87,12 +96,12 @@ public class ApplePressFermentingCategory implements IRecipeCategory<ApplePressF
         if (recipe.requiresBottle()) {
             ItemStack wineBottle = new ItemStack(ObjectRegistry.WINE_BOTTLE.get());
             builder.addSlot(RecipeIngredientRole.INPUT, 119 - X_OFFSET, 50 - Y_OFFSET)
-                    .addIngredients(Ingredient.of(wineBottle));
+                    .addIngredients(Ingredient.of(wineBottle.getItem()));
         }
     }
 
     @Override
-    public void draw(ApplePressFermentingRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
+    public void draw(ApplePressFermentingRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphicsExtractor guiGraphics, double mouseX, double mouseY) {
         arrow.draw(guiGraphics, ARROW_POS.x() - X_OFFSET, ARROW_POS.y() - Y_OFFSET);
     }
 }

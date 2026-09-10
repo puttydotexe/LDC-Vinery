@@ -1,13 +1,12 @@
 package net.satisfy.vinery.platform.fabric;
 
 import me.shedaniel.autoconfig.AutoConfig;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.block.Block;
@@ -121,10 +120,14 @@ public class PlatformHelperImpl extends PlatformHelper {
     }
 
     public static <T extends Entity> Supplier<EntityType<T>> registerBoatType(String name, EntityType.EntityFactory<T> factory, MobCategory category, float width, float height, int clientTrackingRange) {
+        var id = Vinery.identifier(name);
         EntityType<T> registry = Registry.register(
                 BuiltInRegistries.ENTITY_TYPE,
-                ResourceLocation.fromNamespaceAndPath(Vinery.MOD_ID, name),
-                FabricEntityTypeBuilder.create(category, factory).dimensions(EntityDimensions.scalable(width, height)).trackRangeChunks(clientTrackingRange).build()
+                id,
+                EntityType.Builder.of(factory, category)
+                        .sized(width, height)
+                        .clientTrackingRange(clientTrackingRange)
+                        .build(ResourceKey.create(Registries.ENTITY_TYPE, id))
         );
         return () -> registry;
     }

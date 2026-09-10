@@ -10,11 +10,9 @@ import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeManager;
 import net.satisfy.vinery.core.Vinery;
 import net.satisfy.vinery.core.compat.jei.category.ApplePressMashingCategory;
 import net.satisfy.vinery.core.compat.jei.category.FermentationBarrelCategory;
@@ -24,11 +22,9 @@ import net.satisfy.vinery.core.recipe.ApplePressMashingRecipe;
 import net.satisfy.vinery.core.recipe.FermentationBarrelRecipe;
 import net.satisfy.vinery.core.recipe.ApplePressFermentingRecipe; // Import der neuen Rezeptklasse
 import net.satisfy.vinery.core.registry.ObjectRegistry;
-import net.satisfy.vinery.core.registry.RecipeTypesRegistry;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.Objects;
 
 @JeiPlugin
 public class VineryJEIPlugin implements IModPlugin {
@@ -42,20 +38,13 @@ public class VineryJEIPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        RecipeManager rm = Objects.requireNonNull(Minecraft.getInstance().level).getRecipeManager();
-
-        List<RecipeHolder<FermentationBarrelRecipe>> fermentationBarrelRecipes = rm.getAllRecipesFor(RecipeTypesRegistry.FERMENTATION_BARREL_RECIPE_TYPE.get());
-        registration.addRecipes(FermentationBarrelCategory.FERMENTATION_BARREL, fermentationBarrelRecipes.stream().map(RecipeHolder::value).toList());
-
-        List<RecipeHolder<ApplePressFermentingRecipe>> applePressRecipes = rm.getAllRecipesFor(RecipeTypesRegistry.APPLE_PRESS_FERMENTING_RECIPE_TYPE.get());
-        registration.addRecipes(ApplePressFermentingCategory.APPLE_PRESS_TYPE, applePressRecipes.stream().map(RecipeHolder::value).toList());
-
-        List<RecipeHolder<ApplePressMashingRecipe>> applePressMashingRecipes = rm.getAllRecipesFor(RecipeTypesRegistry.APPLE_PRESS_MASHING_RECIPE_TYPE.get());
-        registration.addRecipes(ApplePressMashingCategory.APPLE_PRESS_MASHING_TYPE, applePressMashingRecipes.stream().map(RecipeHolder::value).toList());
+        registration.addRecipes(FermentationBarrelCategory.FERMENTATION_BARREL, List.of());
+        registration.addRecipes(ApplePressFermentingCategory.APPLE_PRESS_TYPE, List.of());
+        registration.addRecipes(ApplePressMashingCategory.APPLE_PRESS_MASHING_TYPE, List.of());
     }
 
     @Override
-    public @NotNull ResourceLocation getPluginUid() {
+    public @NotNull Identifier getPluginUid() {
         return Vinery.identifier("jei_plugin");
     }
 

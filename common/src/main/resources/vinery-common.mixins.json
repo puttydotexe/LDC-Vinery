@@ -10,6 +10,7 @@
     "BoneMealItemMixin",
     "ExperienceOrbMixin",
     "FoxEntityEatSweetBerriesGoalMixin",
+    "ItemStackMixin",
     "LivingEntityMixin",
     "PlantBlockMixin",
     "ShovelItemMixin",

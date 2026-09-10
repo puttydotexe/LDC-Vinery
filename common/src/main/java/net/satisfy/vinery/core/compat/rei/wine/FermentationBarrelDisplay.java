@@ -1,10 +1,11 @@
 package net.satisfy.vinery.core.compat.rei.wine;
 
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
+import me.shedaniel.rei.api.common.display.DisplaySerializer;
 import me.shedaniel.rei.api.common.display.basic.BasicDisplay;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.satisfy.vinery.core.Vinery;
@@ -55,5 +56,10 @@ public class FermentationBarrelDisplay extends BasicDisplay {
     @Override
     public CategoryIdentifier<?> getCategoryIdentifier() {
         return FERMENTATION_BARREL_DISPLAY;
+    }
+
+    @Override
+    public DisplaySerializer<? extends FermentationBarrelDisplay> getSerializer() {
+        return null;
     }
 }

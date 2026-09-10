@@ -48,7 +48,7 @@ public class FermentationBarrelBlock extends HorizontalDirectionalBlock implemen
         return shape;
     };
 
-    public static final Map<Direction, VoxelShape> SHAPE = net.minecraft.Util.make(new HashMap<>(), map -> {
+    public static final Map<Direction, VoxelShape> SHAPE = net.minecraft.util.Util.make(new HashMap<>(), map -> {
         for (Direction direction : Direction.Plane.HORIZONTAL.stream().toList()) {
             map.put(direction, GeneralUtil.rotateShape(Direction.SOUTH, direction, voxelShapeSupplier.get()));
         }
@@ -65,7 +65,7 @@ public class FermentationBarrelBlock extends HorizontalDirectionalBlock implemen
 
     @Override
     public @NotNull InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
-        if (world.isClientSide) {
+        if (world.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
 
@@ -99,17 +99,13 @@ public class FermentationBarrelBlock extends HorizontalDirectionalBlock implemen
     }
 
     @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved) {
-        if (!state.is(newState.getBlock())) {
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel world, BlockPos pos, boolean moved) {
             final BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof FermentationBarrelBlockEntity) {
-                if (world instanceof ServerLevel) {
-                    Containers.dropContents(world, pos, (Container) blockEntity);
-                }
+                Containers.dropContents(world, pos, (Container) blockEntity);
                 world.updateNeighbourForOutputSignal(pos, this);
             }
-            super.onRemove(state, world, pos, newState, moved);
-        }
+            super.affectNeighborsAfterRemoval(state, world, pos, moved);
     }
 
     @Nullable
@@ -121,7 +117,7 @@ public class FermentationBarrelBlock extends HorizontalDirectionalBlock implemen
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null
+        return level.isClientSide() ? null
                 : createTicker(type, EntityTypeRegistry.FERMENTATION_BARREL_ENTITY.get(), (world, pos, state1, blockEntity) -> FermentationBarrelBlockEntity.tick(world, pos, blockEntity));
     }
 

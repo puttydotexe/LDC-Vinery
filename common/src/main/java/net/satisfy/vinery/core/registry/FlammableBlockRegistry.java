@@ -4,9 +4,13 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FireBlock;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import static net.satisfy.vinery.core.registry.ObjectRegistry.*;
 
 public class FlammableBlockRegistry {
+    private static final Method SET_FLAMMABLE = findSetFlammableMethod();
 
     public static void init() {
         addFlammable(5, 20, DARK_CHERRY_PLANKS.get(), DARK_CHERRY_SLAB.get(), DARK_CHERRY_STAIRS.get(), DARK_CHERRY_FENCE.get(),
@@ -21,7 +25,21 @@ public class FlammableBlockRegistry {
     public static void addFlammable(int burnOdd, int igniteOdd, Block... blocks) {
         FireBlock fireBlock = (FireBlock) Blocks.FIRE;
         for (Block block : blocks) {
-            fireBlock.setFlammable(block, burnOdd, igniteOdd);
+            try {
+                SET_FLAMMABLE.invoke(fireBlock, block, burnOdd, igniteOdd);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new IllegalStateException("Failed to mark block as flammable: " + block, e);
+            }
+        }
+    }
+
+    private static Method findSetFlammableMethod() {
+        try {
+            Method method = FireBlock.class.getDeclaredMethod("setFlammable", Block.class, int.class, int.class);
+            method.setAccessible(true);
+            return method;
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException("Could not find FireBlock#setFlammable", e);
         }
     }
 }

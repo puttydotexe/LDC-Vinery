@@ -2,10 +2,11 @@ package net.satisfy.vinery.core.compat.rei.press;
 
 
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
+import me.shedaniel.rei.api.common.display.DisplaySerializer;
 import me.shedaniel.rei.api.common.display.basic.BasicDisplay;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -37,5 +38,9 @@ public class ApplePressDisplay extends BasicDisplay {
         return APPLE_PRESS_DISPLAY;
     }
 
+    @Override
+    public DisplaySerializer<? extends ApplePressDisplay> getSerializer() {
+        return null;
+    }
 
 }

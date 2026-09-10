@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.satisfy.vinery.client.gui.handler.slot.ExtendedSlot;
 import net.satisfy.vinery.client.gui.handler.slot.FermentationBarrelOutputSlot;
+import net.satisfy.vinery.core.recipe.FermentationBarrelRecipe;
 import net.satisfy.vinery.core.registry.ObjectRegistry;
 import net.satisfy.vinery.core.registry.RecipeTypesRegistry;
 import net.satisfy.vinery.core.registry.ScreenhandlerTypeRegistry;
@@ -69,10 +70,16 @@ public class FermentationBarrelGuiHandler extends AbstractContainerMenu {
     }
 
     private boolean isIngredient(ItemStack stack) {
-        return this.level.getRecipeManager()
-                .getAllRecipesFor(RecipeTypesRegistry.FERMENTATION_BARREL_RECIPE_TYPE.get())
+        if (this.level.getServer() == null) {
+            return false;
+        }
+        return this.level.getServer().getRecipeManager()
+                .getRecipes()
                 .stream()
-                .anyMatch(recipe -> recipe.value().getIngredients().stream().anyMatch(ingredient -> ingredient.test(stack)));
+                .map(recipe -> recipe.value())
+                .filter(FermentationBarrelRecipe.class::isInstance)
+                .map(FermentationBarrelRecipe.class::cast)
+                .anyMatch(recipe -> recipe.getIngredients().stream().anyMatch(ingredient -> ingredient.test(stack)));
     }
 
     @Override

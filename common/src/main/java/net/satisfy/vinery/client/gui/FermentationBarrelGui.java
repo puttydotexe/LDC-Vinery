@@ -1,13 +1,12 @@
 package net.satisfy.vinery.client.gui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.satisfy.vinery.client.gui.handler.FermentationBarrelGuiHandler;
 import net.satisfy.vinery.core.Vinery;
@@ -15,7 +14,11 @@ import net.satisfy.vinery.platform.PlatformHelper;
 
 @Environment(EnvType.CLIENT)
 public class FermentationBarrelGui extends AbstractContainerScreen<FermentationBarrelGuiHandler> {
-    public static final ResourceLocation BACKGROUND = Vinery.identifier("textures/gui/fermentation_barrel_gui.png");
+    public static final Identifier BACKGROUND =
+            Vinery.identifier("textures/gui/fermentation_barrel_gui.png");
+
+    private static final int TEXTURE_WIDTH = 256;
+    private static final int TEXTURE_HEIGHT = 256;
 
     private static final int FLUID_WIDTH = 20;
     private static final int FLUID_X = 82;
@@ -29,38 +32,104 @@ public class FermentationBarrelGui extends AbstractContainerScreen<FermentationB
     private static final int CRAFT_PROGRESS_GUI_Y = 20;
     private static final int CRAFT_PROGRESS_GUI_HEIGHT = 29;
 
-    public FermentationBarrelGui(FermentationBarrelGuiHandler handler, Inventory inventory, Component title) {
+    public FermentationBarrelGui(
+            FermentationBarrelGuiHandler handler,
+            Inventory inventory,
+            Component title
+    ) {
         super(handler, inventory, title);
-        this.imageWidth = 176;
-        this.imageHeight = 166;
+
         this.titleLabelX = 8;
         this.titleLabelY = 6;
+
         this.inventoryLabelX = 8;
         this.inventoryLabelY = this.imageHeight - 94;
     }
 
     @Override
-    protected void init() {
-        super.init();
-        this.leftPos = (this.width - this.imageWidth) / 2;
-        this.topPos = (this.height - this.imageHeight) / 2;
+    public void extractBackground(
+            GuiGraphicsExtractor graphics,
+            int mouseX,
+            int mouseY,
+            float partialTick
+    ) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                BACKGROUND,
+                this.leftPos,
+                this.topPos,
+                0,
+                0,
+                this.imageWidth,
+                this.imageHeight,
+                TEXTURE_WIDTH,
+                TEXTURE_HEIGHT
+        );
+
+        drawJuiceBar(
+                graphics,
+                this.menu.getJuiceType(),
+                this.menu.getFluidLevel(),
+                this.leftPos + FLUID_X,
+                this.topPos + FLUID_Y
+        );
+
+        extractCraftingProgress(graphics);
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
-        this.renderBackground(guiGraphics,mouseX,mouseY,delta);
-        super.render(guiGraphics, mouseX, mouseY, delta);
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
+    public void extractContents(
+            GuiGraphicsExtractor graphics,
+            int mouseX,
+            int mouseY,
+            float partialTick
+    ) {
+        super.extractContents(graphics, mouseX, mouseY, partialTick);
 
         if (isMouseOverFluidArea(mouseX, mouseY)) {
-            Component tooltip = getFluidTooltip();
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            graphics.setTooltipForNextFrame(
+                    this.font,
+                    getFluidTooltip(),
+                    mouseX,
+                    mouseY
+            );
         }
 
         if (isMouseOverCraftingTimeArea(mouseX, mouseY)) {
-            Component tooltip = getCraftingTimeTooltip();
-            guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+            graphics.setTooltipForNextFrame(
+                    this.font,
+                    getCraftingTimeTooltip(),
+                    mouseX,
+                    mouseY
+            );
         }
+    }
+
+    @Override
+    protected void extractLabels(
+            GuiGraphicsExtractor graphics,
+            int mouseX,
+            int mouseY
+    ) {
+        graphics.text(
+                this.font,
+                this.title,
+                this.titleLabelX,
+                this.titleLabelY,
+                0xFF404040,
+                false
+        );
+
+        graphics.text(
+                this.font,
+                this.playerInventoryTitle,
+                this.inventoryLabelX,
+                this.inventoryLabelY,
+                0xFF404040,
+                false
+        );
     }
 
     private Component getFluidTooltip() {
@@ -68,29 +137,44 @@ public class FermentationBarrelGui extends AbstractContainerScreen<FermentationB
         int fluidLevel = this.menu.getFluidLevel();
         int maxFluidLevel = PlatformHelper.getMaxFluidLevel();
 
-        double percentage = (double) fluidLevel / maxFluidLevel * 100;
-        String percentageStr = String.format("%.2f", percentage);
+        double percentage = maxFluidLevel > 0
+                ? (double) fluidLevel / maxFluidLevel * 100.0
+                : 0.0;
+
+        String percentageString = String.format("%.2f", percentage);
 
         if (juiceType.startsWith("red")) {
             String region = juiceType.substring(4);
+
             return Component.translatable(
-                    "tooltip.vinery.fermentation_barrel.red_" + region + "_juice_with_percentage",
-                    percentageStr
+                    "tooltip.vinery.fermentation_barrel.red_"
+                            + region
+                            + "_juice_with_percentage",
+                    percentageString
             );
-        } else if (juiceType.startsWith("white")) {
+        }
+
+        if (juiceType.startsWith("white")) {
             String region = juiceType.substring(6);
+
             return Component.translatable(
-                    "tooltip.vinery.fermentation_barrel.white_" + region + "_juice_with_percentage",
-                    percentageStr
+                    "tooltip.vinery.fermentation_barrel.white_"
+                            + region
+                            + "_juice_with_percentage",
+                    percentageString
             );
-        } else if (juiceType.equals("apple")) {
+        }
+
+        if (juiceType.equals("apple")) {
             return Component.translatable(
                     "tooltip.vinery.fermentation_barrel.apple_juice_with_percentage",
-                    percentageStr
+                    percentageString
             );
-        } else {
-            return Component.translatable("tooltip.vinery.fermentation_barrel.empty");
         }
+
+        return Component.translatable(
+                "tooltip.vinery.fermentation_barrel.empty"
+        );
     }
 
     private Component getCraftingTimeTooltip() {
@@ -98,29 +182,45 @@ public class FermentationBarrelGui extends AbstractContainerScreen<FermentationB
         int currentTicks = this.menu.data.get(0);
         int remainingTicks = totalTicks - currentTicks;
 
-        if (remainingTicks > 0) {
-            int seconds = remainingTicks / 20;
-            int minutes = seconds / 60;
-            seconds %= 60;
-
-            String formattedTime = String.format("%d:%02d Seconds", minutes, seconds);
-            return Component.translatable("tooltip.vinery.fermentation_barrel.crafting_time", formattedTime);
-        } else {
-            return Component.translatable("tooltip.vinery.fermentation_barrel.crafting_time", "0:00 Seconds");
+        if (remainingTicks <= 0) {
+            return Component.translatable(
+                    "tooltip.vinery.fermentation_barrel.crafting_time",
+                    "0:00 Seconds"
+            );
         }
+
+        int seconds = remainingTicks / 20;
+        int minutes = seconds / 60;
+        seconds %= 60;
+
+        String formattedTime = String.format(
+                "%d:%02d Seconds",
+                minutes,
+                seconds
+        );
+
+        return Component.translatable(
+                "tooltip.vinery.fermentation_barrel.crafting_time",
+                formattedTime
+        );
     }
 
     private boolean isMouseOverFluidArea(int mouseX, int mouseY) {
-        int fluidAreaLeft = this.leftPos + FLUID_X - 1;
-        int fluidAreaTop = this.topPos + FLUID_Y - 5;
-        int fluidAreaRight = this.leftPos + FLUID_X + FLUID_WIDTH + 1;
-        int fluidAreaBottom = this.topPos + FLUID_Y + 10;
+        int left = this.leftPos + FLUID_X - 1;
+        int top = this.topPos + FLUID_Y - 5;
+        int right = this.leftPos + FLUID_X + FLUID_WIDTH + 1;
+        int bottom = this.topPos + FLUID_Y + 10;
 
-        return mouseX >= fluidAreaLeft && mouseX <= fluidAreaRight &&
-                mouseY >= fluidAreaTop && mouseY <= fluidAreaBottom;
+        return mouseX >= left
+                && mouseX <= right
+                && mouseY >= top
+                && mouseY <= bottom;
     }
 
-    private boolean isMouseOverCraftingTimeArea(int mouseX, int mouseY) {
+    private boolean isMouseOverCraftingTimeArea(
+            int mouseX,
+            int mouseY
+    ) {
         int totalTicks = this.menu.data.get(1);
         int currentTicks = this.menu.data.get(0);
 
@@ -128,66 +228,97 @@ public class FermentationBarrelGui extends AbstractContainerScreen<FermentationB
             return false;
         }
 
-        int craftingTimeAreaLeft = this.leftPos + CRAFT_PROGRESS_GUI_X;
-        int craftingTimeAreaTop = this.topPos + CRAFT_PROGRESS_GUI_Y;
-        int craftingTimeAreaRight = this.leftPos + CRAFT_PROGRESS_GUI_X + CRAFT_PROGRESS_WIDTH;
-        int craftingTimeAreaBottom = this.topPos + CRAFT_PROGRESS_GUI_Y + CRAFT_PROGRESS_GUI_HEIGHT;
+        int left = this.leftPos + CRAFT_PROGRESS_GUI_X;
+        int top = this.topPos + CRAFT_PROGRESS_GUI_Y;
+        int right = left + CRAFT_PROGRESS_WIDTH;
+        int bottom = top + CRAFT_PROGRESS_GUI_HEIGHT;
 
-        return mouseX >= craftingTimeAreaLeft && mouseX <= craftingTimeAreaRight &&
-                mouseY >= craftingTimeAreaTop && mouseY <= craftingTimeAreaBottom;
+        return mouseX >= left
+                && mouseX <= right
+                && mouseY >= top
+                && mouseY <= bottom;
     }
 
-    public static void drawJuiceBar(GuiGraphics guiGraphics, String juiceType, int juiceAmount, int originX, int originY) {
+    public static void drawJuiceBar(
+            GuiGraphicsExtractor graphics,
+            String juiceType,
+            int juiceAmount,
+            int originX,
+            int originY
+    ) {
+        int maxFluid = PlatformHelper.getMaxFluidLevel();
 
-        final int MAX_FLUID = PlatformHelper.getMaxFluidLevel();
-        int scaledWidth = (int) ((double) juiceAmount / MAX_FLUID * FLUID_WIDTH);
-        scaledWidth = Math.max(0, Math.min(FLUID_WIDTH, scaledWidth));
+        int scaledWidth = maxFluid > 0
+                ? (int) ((double) juiceAmount / maxFluid * FLUID_WIDTH)
+                : 0;
 
-        final int TEXTURE_X_START = 176;
+        scaledWidth = Math.max(
+                0,
+                Math.min(FLUID_WIDTH, scaledWidth)
+        );
 
-        int TEXTURE__START;
+        if (scaledWidth <= 0) {
+            return;
+        }
+
+        int textureV;
+
         if (juiceType.startsWith("red")) {
-            TEXTURE__START = 29;
-        }
-        else if (juiceType.startsWith("white")) {
-            TEXTURE__START = 33;
-        }
-        else if (juiceType.equals("apple")) {
-            TEXTURE__START = 37;
-        }
-        else {
-            TEXTURE__START = 0;
+            textureV = 29;
+        } else if (juiceType.startsWith("white")) {
+            textureV = 33;
+        } else if (juiceType.equals("apple")) {
+            textureV = 37;
+        } else {
+            return;
         }
 
-        guiGraphics.blit(BACKGROUND, originX, originY , TEXTURE_X_START, TEXTURE__START, scaledWidth, 4);
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                BACKGROUND,
+                originX,
+                originY,
+                176,
+                textureV,
+                scaledWidth,
+                4,
+                TEXTURE_WIDTH,
+                TEXTURE_HEIGHT
+        );
     }
 
-    @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, BACKGROUND);
-        int x = this.leftPos;
-        int y = this.topPos;
-        guiGraphics.blit(BACKGROUND, x, y, 0, 0, this.imageWidth, this.imageHeight);
+    private void extractCraftingProgress(
+            GuiGraphicsExtractor graphics
+    ) {
+        int filledHeight =
+                this.menu.getScaledProgress(CRAFT_PROGRESS_HEIGHT);
 
-        FermentationBarrelGui.drawJuiceBar(guiGraphics, this.menu.getJuiceType(), this.menu.getFluidLevel(), x + FLUID_X, y + FLUID_Y);
+        if (filledHeight <= 0) {
+            return;
+        }
 
-        this.renderCraftingProgress(guiGraphics, x, y);
-    }
+        int drawY =
+                this.topPos
+                        + CRAFT_PROGRESS_GUI_Y
+                        + CRAFT_PROGRESS_GUI_HEIGHT
+                        - filledHeight;
 
-    @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(this.font, this.title.getString(), this.titleLabelX, this.titleLabelY, 4210752, false);
-        guiGraphics.drawString(this.font, this.playerInventoryTitle.getString(), this.inventoryLabelX, this.inventoryLabelY, 4210752, false);
-    }
+        int textureY =
+                CRAFT_PROGRESS_TEXTURE_Y
+                        + CRAFT_PROGRESS_HEIGHT
+                        - filledHeight;
 
-    protected void renderCraftingProgress(GuiGraphics guiGraphics, int guiLeft, int guiTop) {
-        int filledHeight = this.menu.getScaledProgress(CRAFT_PROGRESS_HEIGHT);
-
-        int drawY = guiTop + CRAFT_PROGRESS_GUI_Y + (CRAFT_PROGRESS_GUI_HEIGHT - filledHeight);
-
-        RenderSystem.setShaderTexture(0, BACKGROUND);
-
-        guiGraphics.blit(BACKGROUND, guiLeft + CRAFT_PROGRESS_GUI_X, drawY, CRAFT_PROGRESS_TEXTURE_X, CRAFT_PROGRESS_TEXTURE_Y + (CRAFT_PROGRESS_HEIGHT - filledHeight), CRAFT_PROGRESS_WIDTH, filledHeight);
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                BACKGROUND,
+                this.leftPos + CRAFT_PROGRESS_GUI_X,
+                drawY,
+                CRAFT_PROGRESS_TEXTURE_X,
+                textureY,
+                CRAFT_PROGRESS_WIDTH,
+                filledHeight,
+                TEXTURE_WIDTH,
+                TEXTURE_HEIGHT
+        );
     }
 }

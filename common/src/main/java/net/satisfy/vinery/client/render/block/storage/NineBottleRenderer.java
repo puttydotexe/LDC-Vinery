@@ -2,54 +2,49 @@ package net.satisfy.vinery.client.render.block.storage;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.block.BlockModelRenderState;
 import net.satisfy.vinery.client.util.ClientUtil;
-import net.satisfy.vinery.core.block.WineBottleBlock;
-import net.satisfy.vinery.core.block.entity.StorageBlockEntity;
 
 public class NineBottleRenderer implements StorageTypeRenderer {
     @Override
-    public void render(StorageBlockEntity entity, PoseStack matrices, MultiBufferSource vertexConsumers, NonNullList<ItemStack> itemStacks) {
-        matrices.translate(-0.13, 0.335, 0.125);
-        matrices.scale(0.9f, 0.9f, 0.9f);
+    public void submit(
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            StorageRenderData storage,
+            int packedLight
+    ) {
+        poseStack.translate(-0.13, 0.335, 0.125);
+        poseStack.scale(0.9F, 0.9F, 0.9F);
 
-        for (int i = 0; i < itemStacks.size(); i++) {
-            ItemStack stack = itemStacks.get(i);
-            if (stack.isEmpty() || !(stack.getItem() instanceof BlockItem blockItem)) {
+        int count = Math.min(storage.size(), 9);
+
+        for (int i = 0; i < count; i++) {
+            BlockModelRenderState renderState = storage.getBlockModel(i);
+
+            if (renderState.isEmpty()) {
                 continue;
             }
 
-            matrices.pushPose();
+            poseStack.pushPose();
 
-            int line = i >= 6 ? 3 : i >= 3 ? 2 : 1;
-            float x;
-            float y;
+            int row = i / 3;
+            int column = i % 3;
 
-            if (line == 1) {
-                x = -0.35f * i;
-                y = 0f;
-            } else if (line == 2) {
-                x = -0.35f * (i - 3);
-                y = -0.33f;
-            } else {
-                x = -0.35f * (i - 6);
-                y = -0.66f;
-            }
+            float x = -0.35F * column;
+            float y = -0.33F * row;
 
-            matrices.translate(x, y, 0f);
-            matrices.mulPose(Axis.XN.rotationDegrees(90f));
+            poseStack.translate(x, y, 0.0F);
+            poseStack.mulPose(Axis.XN.rotationDegrees(90.0F));
 
-            BlockState state = blockItem.getBlock().defaultBlockState();
-            if (state.hasProperty(WineBottleBlock.FAKE_MODEL)) {
-                state = state.setValue(WineBottleBlock.FAKE_MODEL, false);
-            }
+            ClientUtil.renderBlock(
+                    renderState,
+                    poseStack,
+                    collector,
+                    packedLight
+            );
 
-            ClientUtil.renderBlock(state, matrices, vertexConsumers, entity);
-            matrices.popPose();
+            poseStack.popPose();
         }
     }
 }

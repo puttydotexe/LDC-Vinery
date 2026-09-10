@@ -10,7 +10,7 @@ import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.satisfy.vinery.core.recipe.ApplePressMashingRecipe;
 import net.satisfy.vinery.core.registry.ObjectRegistry;
@@ -29,7 +29,7 @@ public class ApplePressMashingCategory implements IRecipeCategory<ApplePressMash
     private final Component title;
 
     public ApplePressMashingCategory(IGuiHelper helper) {
-        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath("vinery", "textures/gui/apple_press_gui.png");
+        Identifier texture = Identifier.fromNamespaceAndPath("vinery", "textures/gui/apple_press_gui.png");
         this.background = helper.createDrawable(texture, X_OFFSET, Y_OFFSET, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
         ItemStack pressStack = new ItemStack(ObjectRegistry.APPLE_PRESS.get());
         this.icon = helper.createDrawableIngredient(VanillaTypes.ITEM_STACK, pressStack);
@@ -49,10 +49,19 @@ public class ApplePressMashingCategory implements IRecipeCategory<ApplePressMash
     }
 
     @NotNull
-    @Override
     @SuppressWarnings("removal")
     public IDrawable getBackground() {
         return background;
+    }
+
+    @Override
+    public int getWidth() {
+        return BACKGROUND_WIDTH;
+    }
+
+    @Override
+    public int getHeight() {
+        return BACKGROUND_HEIGHT;
     }
 
     @Override

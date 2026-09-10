@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -48,15 +48,22 @@ public class BigBottleStorageBlock extends StorageBlock {
 
     @Override
     public @NotNull InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
-        ItemStack stack = player.getItemInHand(player.getUsedItemHand());
-        if (player.isShiftKeyDown() && stack.isEmpty()) {
+        if (player.isShiftKeyDown()) {
             if (!world.isClientSide()) {
                 world.playSound(null, pos, OPEN_SOUND, SoundSource.BLOCKS, 0.4f, 0.4f);
                 world.setBlock(pos, state.setValue(OPEN, !state.getValue(OPEN)), UPDATE_ALL);
             }
-            return InteractionResult.sidedSuccess(world.isClientSide());
+            return world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         } else if (state.getValue(OPEN)) {
             return super.useWithoutItem(state, world, pos, player, hit);
+        }
+        return InteractionResult.PASS;
+    }
+
+    @Override
+    public @NotNull InteractionResult useItemOn(ItemStack stack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (state.getValue(OPEN)) {
+            return super.useItemOn(stack, state, world, pos, player, hand, hit);
         }
         return InteractionResult.PASS;
     }
@@ -78,7 +85,7 @@ public class BigBottleStorageBlock extends StorageBlock {
     }
 
     @Override
-    public ResourceLocation type() {
+    public Identifier type() {
         return StorageTypeRegistry.BIG_BOTTLE;
     }
 
@@ -92,7 +99,6 @@ public class BigBottleStorageBlock extends StorageBlock {
         return 0;
     }
 
-    @Override
     public void appendHoverText(ItemStack itemStack, Item.TooltipContext tooltipContext, List<Component> list, TooltipFlag tooltipFlag) {
         MutableComponent allBold = Component.translatable("tooltip.vinery.large_bottle_first")
                 .withStyle(style -> style.withBold(true).withColor(ChatFormatting.GRAY));

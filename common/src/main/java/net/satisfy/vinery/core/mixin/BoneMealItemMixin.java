@@ -37,10 +37,10 @@ public abstract class BoneMealItemMixin {
         Player player = context.getPlayer();
         if (player == null) return;
 
-        ItemStack helmet = player.getInventory().getArmor(3);
-        ItemStack chestplate = player.getInventory().getArmor(2);
-        ItemStack leggings = player.getInventory().getArmor(1);
-        ItemStack boots = player.getInventory().getArmor(0);
+        ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
+        ItemStack chestplate = player.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack leggings = player.getItemBySlot(EquipmentSlot.LEGS);
+        ItemStack boots = player.getItemBySlot(EquipmentSlot.FEET);
 
         boolean hasFullSet = helmet.getItem() instanceof WinemakerHelmetItem &&
                 chestplate.getItem() instanceof WinemakerChestItem &&
@@ -55,16 +55,9 @@ public abstract class BoneMealItemMixin {
                 heldItem.grow(1);
             }
 
-            for (int i = 0; i < 4; i++) {
-                ItemStack armorPiece = player.getInventory().getArmor(i);
+            for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}) {
+                ItemStack armorPiece = player.getItemBySlot(slot);
                 if (!armorPiece.isEmpty()) {
-                    EquipmentSlot slot = switch(i) {
-                        case 0 -> EquipmentSlot.FEET;
-                        case 1 -> EquipmentSlot.LEGS;
-                        case 2 -> EquipmentSlot.CHEST;
-                        case 3 -> EquipmentSlot.HEAD;
-                        default -> EquipmentSlot.MAINHAND;
-                    };
                     armorPiece.hurtAndBreak(2, player, slot);
                 }
             }

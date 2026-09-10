@@ -1,7 +1,6 @@
 package net.satisfy.vinery.core.block.entity;
 
 import net.minecraft.core.*;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.ContainerHelper;
@@ -16,6 +15,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.satisfy.vinery.client.gui.handler.FermentationBarrelGuiHandler;
 import net.satisfy.vinery.core.recipe.FermentationBarrelRecipe;
 import net.satisfy.vinery.core.recipe.input.FermentationBarrelRecipeInput;
@@ -90,7 +91,7 @@ public class FermentationBarrelBlockEntity extends BlockEntity implements Implem
     public void setFluidLevel(int fluidLevel) {
         this.fluidLevel = fluidLevel;
         setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
         }
     }
@@ -139,26 +140,26 @@ public class FermentationBarrelBlockEntity extends BlockEntity implements Implem
     }
 
     @Override
-    public void loadAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
-        super.loadAdditional(nbt,provider);
+    public void loadAdditional(ValueInput nbt) {
+        super.loadAdditional(nbt);
         this.inventory = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(nbt, this.inventory,provider);
-        this.fermentationTime = nbt.getInt("FermentationTime");
-        this.fluidLevel = nbt.getInt("FluidLevel");
-        this.juiceType = nbt.getString("JuiceType");
+        ContainerHelper.loadAllItems(nbt, this.inventory);
+        this.fermentationTime = nbt.getIntOr("FermentationTime", 0);
+        this.fluidLevel = nbt.getIntOr("FluidLevel", 0);
+        this.juiceType = nbt.getStringOr("JuiceType", "");
     }
 
     @Override
-    public void saveAdditional(CompoundTag nbt,HolderLookup.Provider provider) {
-        super.saveAdditional(nbt,provider);
-        ContainerHelper.saveAllItems(nbt, this.inventory,provider);
+    public void saveAdditional(ValueOutput nbt) {
+        super.saveAdditional(nbt);
+        ContainerHelper.saveAllItems(nbt, this.inventory);
         nbt.putInt("FermentationTime", this.fermentationTime);
         nbt.putInt("FluidLevel", this.fluidLevel);
         nbt.putString("JuiceType", this.juiceType);
     }
 
     public static void tick(Level world, BlockPos pos, FermentationBarrelBlockEntity blockEntity) {
-        if (world.isClientSide) return;
+        if (world.isClientSide()) return;
 
         if (blockEntity.fluidLevel == 0) {
             blockEntity.setJuiceType("");
@@ -180,7 +181,9 @@ public class FermentationBarrelBlockEntity extends BlockEntity implements Implem
                 new FermentationBarrelRecipeInput.JuiceData(blockEntity.juiceType, blockEntity.fluidLevel)
         );
 
-        var recipeHolder = world.getRecipeManager()
+        if (world.getServer() == null) return;
+
+        var recipeHolder = world.getServer().getRecipeManager()
                 .getRecipeFor(RecipeTypesRegistry.FERMENTATION_BARREL_RECIPE_TYPE.get(), input, world);
 
         if (recipeHolder.isEmpty()) {
@@ -413,10 +416,13 @@ public class FermentationBarrelBlockEntity extends BlockEntity implements Implem
 
     private boolean isIngredient(ItemStack stack) {
         if (level == null) return false;
-        return level.getRecipeManager()
-                .getAllRecipesFor(RecipeTypesRegistry.FERMENTATION_BARREL_RECIPE_TYPE.get())
+        return level.getServer() != null && level.getServer().getRecipeManager()
+                .getRecipes()
                 .stream()
-                .anyMatch(recipe -> recipe.value().getIngredients().stream().anyMatch(ingredient -> ingredient.test(stack)));
+                .map(recipe -> recipe.value())
+                .filter(FermentationBarrelRecipe.class::isInstance)
+                .map(FermentationBarrelRecipe.class::cast)
+                .anyMatch(recipe -> recipe.getIngredients().stream().anyMatch(ingredient -> ingredient.test(stack)));
     }
 
     @Override

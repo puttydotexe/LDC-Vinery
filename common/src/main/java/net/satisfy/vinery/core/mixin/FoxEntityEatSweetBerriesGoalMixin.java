@@ -5,7 +5,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.MoveToBlockGoal;
-import net.minecraft.world.entity.animal.Fox;
+import net.minecraft.world.entity.animal.fox.Fox;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class FoxEntityEatSweetBerriesGoalMixin extends MoveToBlockGoal {
     @Final
     @Shadow
-    Fox field_17975;
+    Fox this$0;
 
     public FoxEntityEatSweetBerriesGoalMixin(PathfinderMob mob, double speed, int range) {
         super(mob, speed, range);
@@ -41,7 +41,7 @@ public abstract class FoxEntityEatSweetBerriesGoalMixin extends MoveToBlockGoal 
 
     @Inject(method = "onReachedTarget", at = @At("TAIL"))
     private void eatGrapes(CallbackInfo ci) {
-        final BlockState state = field_17975.level().getBlockState(this.blockPos);
+        final BlockState state = this$0.level().getBlockState(this.blockPos);
         if (state.getBlock() instanceof GrapeBush bush) {
             pickGrapes(state, bush.grapeType());
         }
@@ -51,18 +51,18 @@ public abstract class FoxEntityEatSweetBerriesGoalMixin extends MoveToBlockGoal 
     private void pickGrapes(BlockState state, GrapeType type) {
         final int age = state.getValue(GrapeBush.AGE);
         state.setValue(GrapeBush.AGE, 1);
-        int j = 1 + field_17975.level().random.nextInt(2) + (age == 3 ? 1 : 0);
-        ItemStack itemStack = field_17975.getItemBySlot(EquipmentSlot.MAINHAND);
+        int j = 1 + this$0.level().getRandom().nextInt(2) + (age == 3 ? 1 : 0);
+        ItemStack itemStack = this$0.getItemBySlot(EquipmentSlot.MAINHAND);
         ItemStack grape = getGrapeFor(type);
         if (itemStack.isEmpty()) {
-            field_17975.setItemSlot(EquipmentSlot.MAINHAND, grape);
+            this$0.setItemSlot(EquipmentSlot.MAINHAND, grape);
             --j;
         }
         if (j > 0) {
-            Block.popResource(field_17975.level(), this.blockPos, new ItemStack(grape.getItem(), j));
+            Block.popResource(this$0.level(), this.blockPos, new ItemStack(grape.getItem(), j));
         }
-        field_17975.playSound(SoundEvents.SWEET_BERRY_BUSH_PICK_BERRIES, 1.0F, 1.0F);
-        field_17975.level().setBlock(this.blockPos, state.setValue(GrapeBush.AGE, 1), 2);
+        this$0.playSound(SoundEvents.SWEET_BERRY_BUSH_PICK_BERRIES, 1.0F, 1.0F);
+        this$0.level().setBlock(this.blockPos, state.setValue(GrapeBush.AGE, 1), 2);
     }
 
     @Unique

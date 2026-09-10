@@ -5,7 +5,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ElytraItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -61,7 +60,6 @@ public class ClientEvents {
     private static void performDoubleJump(Player player) {
         Vec3 motion = player.getDeltaMovement();
         player.setDeltaMovement(motion.x, 0.42, motion.z);
-        player.hasImpulse = true;
     }
 
     private static boolean canJump(LocalPlayer player) {
@@ -71,6 +69,6 @@ public class ClientEvents {
 
     private static boolean wearingUsableElytra(LocalPlayer player) {
         ItemStack chestItemStack = player.getItemBySlot(EquipmentSlot.CHEST);
-        return chestItemStack.getItem() == Items.ELYTRA && ElytraItem.isFlyEnabled(chestItemStack);
+        return chestItemStack.is(Items.ELYTRA);
     }
 }

@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "vinery:item/flower_box"
+    "layer0": "minecraft:item/flower_pot"
   }
 }

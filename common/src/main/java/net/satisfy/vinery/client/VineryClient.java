@@ -4,19 +4,16 @@ import dev.architectury.registry.client.level.entity.EntityModelLayerRegistry;
 import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
 import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry;
 import dev.architectury.registry.client.rendering.ColorHandlerRegistry;
-import dev.architectury.registry.client.rendering.RenderTypeRegistry;
-import dev.architectury.registry.menu.MenuRegistry;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.model.BoatModel;
-import net.minecraft.client.model.ChestBoatModel;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.client.color.block.BlockTintSource;
+import net.minecraft.client.model.object.boat.BoatModel;
 import net.minecraft.client.renderer.BiomeColors;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.GrassColor;
-import net.satisfy.vinery.client.gui.ApplePressGui;
-import net.satisfy.vinery.client.gui.FermentationBarrelGui;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.satisfy.vinery.client.model.*;
 import net.satisfy.vinery.client.render.block.CompletionistBannerRenderer;
 import net.satisfy.vinery.client.render.block.DarkCherryHangingSignRenderer;
@@ -27,8 +24,8 @@ import net.satisfy.vinery.client.render.entity.ChairRenderer;
 import net.satisfy.vinery.client.render.entity.DarkCherryBoatRenderer;
 import net.satisfy.vinery.client.render.entity.MuleRenderer;
 import net.satisfy.vinery.client.render.entity.WanderingWinemakerRenderer;
+import net.satisfy.vinery.core.entity.DarkCherryBoatEntity;
 import net.satisfy.vinery.core.registry.EntityTypeRegistry;
-import net.satisfy.vinery.core.registry.ScreenhandlerTypeRegistry;
 import net.satisfy.vinery.core.registry.StorageTypeRegistry;
 
 import static net.satisfy.vinery.core.registry.ObjectRegistry.*;
@@ -36,46 +33,53 @@ import static net.satisfy.vinery.core.registry.ObjectRegistry.*;
 @Environment(EnvType.CLIENT)
 public class VineryClient {
     public static void onInitializeClient() {
-        RenderTypeRegistry.register(RenderType.cutout(),
-                RED_GRAPE_BUSH.get(), WHITE_GRAPE_BUSH.get(), DARK_CHERRY_DOOR.get(), FERMENTATION_BARREL.get(),
-                MELLOHI_WINE.get(), CLARK_WINE.get(), BOLVAR_WINE.get(), CHERRY_WINE.get(),
-                LILITU_WINE.get(), CHENET_WINE.get(), NOIR_WINE.get(), APPLE_CIDER.get(),
-                APPLE_WINE.get(), SOLARIS_WINE.get(), JELLIE_WINE.get(), AEGIS_WINE.get(), KELP_CIDER.get(),
-                SAVANNA_RED_GRAPE_BUSH.get(), SAVANNA_WHITE_GRAPE_BUSH.get(),
-                CHORUS_WINE.get(), STAL_WINE.get(), MAGNETIC_WINE.get(), STRAD_WINE.get(), JUNGLE_WHITE_GRAPE_BUSH.get(),
-                JUNGLE_RED_GRAPE_BUSH.get(), TAIGA_RED_GRAPE_BUSH.get(), TAIGA_WHITE_GRAPE_BUSH.get(),
-                GRAPEVINE_STEM.get(), WINE_BOX.get(), DARK_CHERRY_WINE_RACK_MID.get(), DARK_CHERRY_WINE_RACK_BIG.get(),
-                APPLE_PRESS.get(), GRASS_SLAB.get(), DARK_CHERRY_SAPLING.get(), APPLE_TREE_SAPLING.get(),
-                STACKABLE_LOG.get(), APPLE_LEAVES.get(), POTTED_APPLE_TREE_SAPLING.get(), DARK_CHERRY_WINE_RACK_SMALL.get(),
-                POTTED_DARK_CHERRY_TREE_SAPLING.get(), RED_WINE.get(), DARK_CHERRY_CHAIR.get(), CRISTEL_WINE.get(),
-                VILLAGERS_FRIGHT.get(), EISWEIN.get(), CREEPERS_CRUSH.get(),
-                GLOWING_WINE.get(), JO_SPECIAL_MIXTURE.get(), MEAD.get(), BOTTLE_MOJANG_NOIR.get(),
-                DARK_CHERRY_TABLE.get(), OAK_WINE_RACK_MID.get(), DARK_OAK_WINE_RACK_MID.get(), BIRCH_WINE_RACK_MID.get(),
-                SPRUCE_WINE_RACK_MID.get(), JUNGLE_WINE_RACK_MID.get(), MANGROVE_WINE_RACK_MID.get(), BAMBOO_WINE_RACK_MID.get(),
-                ACACIA_WINE_RACK_MID.get(), OAK_LATTICE.get(), SPRUCE_LATTICE.get(),
-                BIRCH_LATTICE.get(), DARK_OAK_LATTICE.get(), CHERRY_LATTICE.get(), BAMBOO_LATTICE.get(), ACACIA_LATTICE.get(), JUNGLE_LATTICE.get(),
-                MANGROVE_LATTICE.get(), DARK_CHERRY_LATTICE.get(), CHERRY_WINE_RACK_MID.get()
-        );
+        // RenderTypeRegistry.register(RenderType.cutout(),
+        //         RED_GRAPE_BUSH.get(), WHITE_GRAPE_BUSH.get(), DARK_CHERRY_DOOR.get(), FERMENTATION_BARREL.get(),
+        //         MELLOHI_WINE.get(), CLARK_WINE.get(), BOLVAR_WINE.get(), CHERRY_WINE.get(),
+        //         LILITU_WINE.get(), CHENET_WINE.get(), NOIR_WINE.get(), APPLE_CIDER.get(),
+        //         APPLE_WINE.get(), SOLARIS_WINE.get(), JELLIE_WINE.get(), AEGIS_WINE.get(), KELP_CIDER.get(),
+        //         SAVANNA_RED_GRAPE_BUSH.get(), SAVANNA_WHITE_GRAPE_BUSH.get(),
+        //         CHORUS_WINE.get(), STAL_WINE.get(), MAGNETIC_WINE.get(), STRAD_WINE.get(), JUNGLE_WHITE_GRAPE_BUSH.get(),
+        //         JUNGLE_RED_GRAPE_BUSH.get(), TAIGA_RED_GRAPE_BUSH.get(), TAIGA_WHITE_GRAPE_BUSH.get(),
+        //         GRAPEVINE_STEM.get(), WINE_BOX.get(), DARK_CHERRY_WINE_RACK_MID.get(), DARK_CHERRY_WINE_RACK_BIG.get(),
+        //         APPLE_PRESS.get(), GRASS_SLAB.get(), DARK_CHERRY_SAPLING.get(), APPLE_TREE_SAPLING.get(),
+        //         STACKABLE_LOG.get(), APPLE_LEAVES.get(), POTTED_APPLE_TREE_SAPLING.get(), DARK_CHERRY_WINE_RACK_SMALL.get(),
+        //         POTTED_DARK_CHERRY_TREE_SAPLING.get(), RED_WINE.get(), DARK_CHERRY_CHAIR.get(), CRISTEL_WINE.get(),
+        //         VILLAGERS_FRIGHT.get(), EISWEIN.get(), CREEPERS_CRUSH.get(),
+        //         GLOWING_WINE.get(), JO_SPECIAL_MIXTURE.get(), MEAD.get(), BOTTLE_MOJANG_NOIR.get(),
+        //         DARK_CHERRY_TABLE.get(), OAK_WINE_RACK_MID.get(), DARK_OAK_WINE_RACK_MID.get(), BIRCH_WINE_RACK_MID.get(),
+        //         SPRUCE_WINE_RACK_MID.get(), JUNGLE_WINE_RACK_MID.get(), MANGROVE_WINE_RACK_MID.get(), BAMBOO_WINE_RACK_MID.get(),
+        //         ACACIA_WINE_RACK_MID.get(), OAK_LATTICE.get(), SPRUCE_LATTICE.get(),
+        //         BIRCH_LATTICE.get(), DARK_OAK_LATTICE.get(), CHERRY_LATTICE.get(), BAMBOO_LATTICE.get(), ACACIA_LATTICE.get(), JUNGLE_LATTICE.get(),
+        //         MANGROVE_LATTICE.get(), DARK_CHERRY_LATTICE.get(), CHERRY_WINE_RACK_MID.get()
+        // );
 
-        RenderTypeRegistry.register(RenderType.translucent(), WINDOW.get(), WINDOW_BLOCK.get());
+        // RenderTypeRegistry.register(RenderType.translucent(), WINDOW.get(), WINDOW_BLOCK.get());
 
-        ColorHandlerRegistry.registerItemColors((stack, tintIndex) -> GrassColor.get(0.5, 1.0), GRASS_SLAB);
-        ColorHandlerRegistry.registerBlockColors((state, world, pos, tintIndex) -> {
-                    if (world == null || pos == null) {
-                        return -1;
-                    }
-                    return BiomeColors.getAverageGrassColor(world, pos);
-                }, GRASS_SLAB.get()
-        );
-        ColorHandlerRegistry.registerBlockColors((state, world, pos, tintIndex) -> {
-            if (world == null || pos == null) {
+        ColorHandlerRegistry.registerBlockColors(new BlockTintSource() {
+            @Override
+            public int color(BlockState state) {
                 return -1;
             }
-            return BiomeColors.getAverageFoliageColor(world, pos);
+
+            @Override
+            public int colorInWorld(BlockState state, BlockAndTintGetter world, BlockPos pos) {
+                return BiomeColors.getAverageGrassColor(world, pos);
+            }
+        }, GRASS_SLAB.get());
+        ColorHandlerRegistry.registerBlockColors(new BlockTintSource() {
+            @Override
+            public int color(BlockState state) {
+                return -1;
+            }
+
+            @Override
+            public int colorInWorld(BlockState state, BlockAndTintGetter world, BlockPos pos) {
+                return BiomeColors.getAverageFoliageColor(world, pos);
+            }
         }, JUNGLE_RED_GRAPE_BUSH.get(), JUNGLE_WHITE_GRAPE_BUSH.get());
 
         registerStorageType();
-        registerScreenFactory();
         registerBlockEntityRenderer();
     }
 
@@ -84,7 +88,7 @@ public class VineryClient {
         registerEntityRenderers();
     }
 
-    public static void registerStorageTypes(ResourceLocation location, StorageTypeRenderer renderer){
+    public static void registerStorageTypes(Identifier location, StorageTypeRenderer renderer) {
         StorageBlockEntityRenderer.registerStorageType(location, renderer);
     }
 
@@ -97,17 +101,13 @@ public class VineryClient {
         registerStorageTypes(StorageTypeRegistry.WINE_BOTTLE, new WineBottleRenderer());
     }
 
-    public static void registerScreenFactory() {
-        MenuRegistry.registerScreenFactory(ScreenhandlerTypeRegistry.FERMENTATION_BARREL_GUI_HANDLER.get(), FermentationBarrelGui::new);
-        MenuRegistry.registerScreenFactory(ScreenhandlerTypeRegistry.APPLE_PRESS_GUI_HANDLER.get(), ApplePressGui::new);
-    }
-
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void registerBlockEntityRenderer() {
         BlockEntityRendererRegistry.register(EntityTypeRegistry.VINERY_STANDARD.get(), CompletionistBannerRenderer::new);
-        BlockEntityRendererRegistry.register(EntityTypeRegistry.STORAGE_ENTITY.get(), context -> new StorageBlockEntityRenderer());
+        BlockEntityRendererRegistry.register(EntityTypeRegistry.STORAGE_ENTITY.get(), StorageBlockEntityRenderer::new);
         BlockEntityRendererRegistry.register(EntityTypeRegistry.LATTICE.get(), LatticeRenderer::new);
-        BlockEntityRendererRegistry.register(EntityTypeRegistry.MOD_SIGN.get(), DarkCherrySignRenderer::new);
-        BlockEntityRendererRegistry.register(EntityTypeRegistry.MOD_HANGING_SIGN.get(), DarkCherryHangingSignRenderer::new);
+        BlockEntityRendererRegistry.register((BlockEntityType) EntityTypeRegistry.MOD_SIGN.get(), context -> new DarkCherrySignRenderer(context));
+        BlockEntityRendererRegistry.register((BlockEntityType) EntityTypeRegistry.MOD_HANGING_SIGN.get(), context -> new DarkCherryHangingSignRenderer(context));
 
     }
 
@@ -119,8 +119,20 @@ public class VineryClient {
         EntityModelLayerRegistry.register(WinemakerBootsModel.LAYER_LOCATION, WinemakerBootsModel::createBodyLayer);
         EntityModelLayerRegistry.register(CompletionistBannerRenderer.LAYER_LOCATION, CompletionistBannerRenderer::createBodyLayer);
         EntityModelLayerRegistry.register(LatticeRenderer.LAYER_LOCATION, LatticeRenderer::getTexturedModelData);
-        LayerDefinition boatLayerDefinition = BoatModel.createBodyModel();
-        LayerDefinition chestBoatLayerDefinition = ChestBoatModel.createBodyModel();
+
+        EntityModelLayerRegistry.register(
+            DarkCherryBoatRenderer.createBoatModelName(
+                    DarkCherryBoatEntity.Type.DARK_CHERRY
+            ),
+            BoatModel::createBoatModel
+        );
+
+        EntityModelLayerRegistry.register(
+                DarkCherryBoatRenderer.createChestBoatModelName(
+                        DarkCherryBoatEntity.Type.DARK_CHERRY
+                ),
+                BoatModel::createChestBoatModel
+        );
     }
 
     public static void registerEntityRenderers() {

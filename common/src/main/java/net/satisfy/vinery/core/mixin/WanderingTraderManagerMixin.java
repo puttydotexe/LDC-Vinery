@@ -3,21 +3,19 @@ package net.satisfy.vinery.core.mixin;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiTypes;
-import net.minecraft.world.entity.npc.WanderingTrader;
-import net.minecraft.world.entity.npc.WanderingTraderSpawner;
+import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
+import net.minecraft.world.entity.npc.wanderingtrader.WanderingTraderSpawner;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.storage.ServerLevelData;
 import net.satisfy.vinery.core.entity.TraderMuleEntity;
 import net.satisfy.vinery.core.registry.EntityTypeRegistry;
 import net.satisfy.vinery.platform.PlatformHelper;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,11 +30,9 @@ public abstract class WanderingTraderManagerMixin implements CustomSpawner {
 
 	@Shadow protected abstract boolean hasEnoughSpace(BlockGetter world, BlockPos pos);
 
-	@Shadow @Final private ServerLevelData serverLevelData;
-
-	@Inject(method = "spawn", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/world/entity/EntityType;spawn(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/MobSpawnType;)Lnet/minecraft/world/entity/Entity;"), cancellable = true)
+	@Inject(method = "spawn", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/world/entity/EntityType;spawn(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/EntitySpawnReason;)Lnet/minecraft/world/entity/Entity;"), cancellable = true)
 	private void trySpawn(ServerLevel world, CallbackInfoReturnable<Boolean> cir) {
-		if (world.random.nextDouble() < PlatformHelper.getTraderSpawnChance()) {
+		if (world.getRandom().nextDouble() < PlatformHelper.getTraderSpawnChance()) {
 			ServerPlayer playerEntity = world.getRandomPlayer();
 			if (playerEntity != null) {
 				BlockPos blockPos = playerEntity.blockPosition();
@@ -55,7 +51,7 @@ public abstract class WanderingTraderManagerMixin implements CustomSpawner {
 					if (biome != null && !biome.is(Biomes.THE_VOID)) {
 						var wanderingWinemakerType = EntityTypeRegistry.WANDERING_WINEMAKER.get();
 						if (wanderingWinemakerType != null) {
-							WanderingTrader wanderingTraderEntity = wanderingWinemakerType.spawn(world, blockPos3, MobSpawnType.EVENT);
+							WanderingTrader wanderingTraderEntity = wanderingWinemakerType.spawn(world, blockPos3, EntitySpawnReason.EVENT);
 							if (wanderingTraderEntity != null) {
 								if (PlatformHelper.shouldSpawnWithMules()) {
 									for (int j = 0; j < 2; ++j) {
@@ -63,7 +59,7 @@ public abstract class WanderingTraderManagerMixin implements CustomSpawner {
 										if (blockPos4 != null) {
 											var muleType = EntityTypeRegistry.MULE.get();
 											if (muleType != null) {
-												TraderMuleEntity traderMuleEntity = muleType.spawn(world, blockPos4, MobSpawnType.EVENT);
+												TraderMuleEntity traderMuleEntity = muleType.spawn(world, blockPos4, EntitySpawnReason.EVENT);
 												if (traderMuleEntity != null) {
 													traderMuleEntity.setLeashedTo(wanderingTraderEntity, true);
 												}
@@ -71,13 +67,9 @@ public abstract class WanderingTraderManagerMixin implements CustomSpawner {
 										}
 									}
 								}
-								if (this.serverLevelData != null) {
-									this.serverLevelData.setWanderingTraderId(wanderingTraderEntity.getUUID());
-									wanderingTraderEntity.setDespawnDelay(PlatformHelper.getTraderSpawnDelay());
-									wanderingTraderEntity.setWanderTarget(blockPos2);
-									wanderingTraderEntity.restrictTo(blockPos2, 16);
-									cir.setReturnValue(true);
-								}
+								wanderingTraderEntity.setDespawnDelay(PlatformHelper.getTraderSpawnDelay());
+								wanderingTraderEntity.setWanderTarget(blockPos2);
+								cir.setReturnValue(true);
 							}
 						}
 					}

@@ -1,5 +1,6 @@
 package net.satisfy.vinery.core.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -31,12 +32,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class AppleLeavesBlock extends LeavesBlock implements BonemealableBlock {
+    public static final MapCodec<AppleLeavesBlock> CODEC = simpleCodec(AppleLeavesBlock::new);
     public static final BooleanProperty CAN_GROW_APPLES = BooleanProperty.create("can_grow_apples");
     public static final BooleanProperty HAS_APPLES = BooleanProperty.create("has_apples");
     public static final IntegerProperty AGE = IntegerProperty.create("age", 0, 3);
 
     public AppleLeavesBlock(Properties settings) {
-        super(settings);
+        super(0.01F, settings);
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(PERSISTENT, true)
                 .setValue(DISTANCE, 7)
@@ -44,6 +46,15 @@ public class AppleLeavesBlock extends LeavesBlock implements BonemealableBlock {
                 .setValue(HAS_APPLES, false)
                 .setValue(AGE, 0)
                 .setValue(WATERLOGGED, false));
+    }
+
+    @Override
+    public MapCodec<AppleLeavesBlock> codec() {
+        return CODEC;
+    }
+
+    @Override
+    protected void spawnFallingLeavesParticle(Level level, BlockPos pos, RandomSource random) {
     }
 
     @Override
@@ -72,7 +83,7 @@ public class AppleLeavesBlock extends LeavesBlock implements BonemealableBlock {
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
-        boolean canGrowApples = ctx.getLevel().random.nextFloat() < 0.3f;
+        boolean canGrowApples = ctx.getLevel().getRandom().nextFloat() < 0.3f;
         return updateDistance(this.defaultBlockState()
                 .setValue(PERSISTENT, true)
                 .setValue(CAN_GROW_APPLES, canGrowApples)
@@ -144,7 +155,7 @@ public class AppleLeavesBlock extends LeavesBlock implements BonemealableBlock {
     }
 
     @Override
-    public @NotNull BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+    public @NotNull BlockState updateShape(BlockState state, net.minecraft.world.level.LevelReader world, net.minecraft.world.level.ScheduledTickAccess scheduledTickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, net.minecraft.util.RandomSource random) {
         return updateDistance(state, world, pos);
     }
 
@@ -152,7 +163,7 @@ public class AppleLeavesBlock extends LeavesBlock implements BonemealableBlock {
         return neighborState.getBlock() instanceof LeavesBlock ? neighborState.getValue(DISTANCE) : (neighborState.is(BlockTags.LOGS) ? 0 : 7);
     }
 
-    private BlockState updateDistance(BlockState state, LevelAccessor world, BlockPos pos) {
+    private BlockState updateDistance(BlockState state, net.minecraft.world.level.LevelReader world, BlockPos pos) {
         int minDistance = 7;
         for (Direction dir : Direction.values()) {
             BlockState neighbor = world.getBlockState(pos.relative(dir));
@@ -162,7 +173,6 @@ public class AppleLeavesBlock extends LeavesBlock implements BonemealableBlock {
         return state.setValue(DISTANCE, minDistance);
     }
 
-    @Override
     public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
         return 1;
     }

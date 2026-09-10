@@ -1,0 +1,7 @@
+{
+	"parent": "vinery:block/template_lattice",
+	"textures": {
+		"0": "minecraft:block/crimson_planks",
+		"particle": "minecraft:block/crimson_planks"
+	}
+}

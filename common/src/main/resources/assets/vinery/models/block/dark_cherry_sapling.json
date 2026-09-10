@@ -2,6 +2,6 @@
 	"credit": "Made by Satisfy",
 	"parent": "minecraft:block/cross",
 	"textures": {
-		"cross": "vinery:item/dark_cherry_sapling"
+		"cross": "vinery:block/dark_cherry_sapling"
 	}
 }
