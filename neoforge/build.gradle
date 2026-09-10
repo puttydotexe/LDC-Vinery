@@ -1,7 +1,7 @@
 plugins {
-    id "com.github.johnrengelman.shadow"
+    id "com.gradleup.shadow"
     id "com.modrinth.minotaur" version "2.+"
-    id "com.matthewprenger.cursegradle" version "1.4.0"
+    // id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
 architectury {
@@ -9,20 +9,15 @@ architectury {
     neoForge()
 }
 
-
 def jarFileName = 'letsdo-vinery-neoforge'
 def changelogText = rootProject.file("CHANGELOG.md").text
-archivesBaseName = jarFileName
 
+base {
+    archivesName = jarFileName
+}
 
 loom {
-    accessWidenerPath.set(project(":common").loom.accessWidenerPath)
-    runs {
-        client {
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-        }
-    }
+    accessWidenerPath = file("src/main/resources/vinery-neoforge.accesswidener")
 }
 
 repositories {
@@ -48,12 +43,12 @@ configurations {
 
 dependencies {
     neoForge "net.neoforged:neoforge:${neo_forge_version}"
-    modApi "dev.architectury:architectury-neoforge:${architectury_version}"
+    api "dev.architectury:architectury-neoforge:${architectury_version}"
 
-    modImplementation "me.shedaniel:RoughlyEnoughItems-neoforge:$rei_version"
-    modCompileOnlyApi("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
-    modCompileOnlyApi("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
-    modRuntimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
+    implementation "me.shedaniel:RoughlyEnoughItems-neoforge:$rei_version"
+    compileOnlyApi("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    compileOnlyApi("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
+    runtimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowBundle project(path: ":common", configuration: "transformProductionNeoForge")
@@ -76,12 +71,6 @@ shadowJar {
     exclude "architectury.common.json"
 
     configurations = [project.configurations.shadowBundle]
-    archiveClassifier.set("dev-shadow")
-}
-
-remapJar {
-    input.set shadowJar.archiveFile
-    dependsOn shadowJar
     archiveClassifier.set(null)
 }
 
@@ -101,50 +90,50 @@ components.java {
     }
 }
 
-publishing {
-    publications {
-        mavenForge(MavenPublication) {
-            artifactId = rootProject.archives_base_name + "-" + project.name
-            from components.java
-        }
-    }
+// publishing {
+//     publications {
+//         mavenForge(MavenPublication) {
+//             artifactId = rootProject.archives_base_name + "-" + project.name
+//             from components.java
+//         }
+//     }
 
-    repositories {
-    }
-}
+//     repositories {
+//     }
+// }
 
-modrinth {
-    token = System.getenv("MODRINTH_TOKEN")
-    projectId = "lets-do-vinery"
-    versionNumber = rootProject.mod_version
-    versionName = "${rootProject.archives_base_name}-${rootProject.mod_version} [${rootProject.minecraft_version}-neoforge]"
-    versionType = "beta"
-    changelog = rootProject.file("CHANGELOG.md").exists() ? rootProject.file("CHANGELOG.md").text : " "
-    gameVersions = [rootProject.minecraft_version]
-    loaders = ["neoforge"]
-    uploadFile = remapJar
-    additionalFiles = [tasks.sourcesJar.archiveFile]
+// modrinth {
+//     token = System.getenv("MODRINTH_TOKEN")
+//     projectId = "lets-do-vinery"
+//     versionNumber = rootProject.mod_version
+//     versionName = "${rootProject.archives_base_name}-${rootProject.mod_version} [${rootProject.minecraft_version}-neoforge]"
+//     versionType = "beta"
+//     changelog = rootProject.file("CHANGELOG.md").exists() ? rootProject.file("CHANGELOG.md").text : " "
+//     gameVersions = [rootProject.minecraft_version]
+//     loaders = ["neoforge"]
+//     uploadFile = shadowJar
+//     additionalFiles = [tasks.sourcesJar.archiveFile]
 
-    dependencies {
-        required.project "architectury-api"
-    }
-}
+//     dependencies {
+//         required.project "architectury-api"
+//     }
+// }
 
-curseforge {
-    apiKey = System.getenv("CURSEFORGE_API_KEY")
-    project {
-        id = "704465"
-        releaseType = "beta"
-        addGameVersion rootProject.minecraft_version
-        addGameVersion "NeoForge"
-        mainArtifact(remapJar) {
-            displayName = "Vinery - ${rootProject.mod_version} - FORGE - ${rootProject.minecraft_version}"
-            changelog = changelogText
-            changelogType = "markdown"
-        }
+// curseforge {
+//     apiKey = System.getenv("CURSEFORGE_API_KEY")
+//     project {
+//         id = "704465"
+//         releaseType = "beta"
+//         addGameVersion rootProject.minecraft_version
+//         addGameVersion "NeoForge"
+//         mainArtifact(shadowJar) {
+//             displayName = "Vinery - ${rootProject.mod_version} - FORGE - ${rootProject.minecraft_version}"
+//             changelog = changelogText
+//             changelogType = "markdown"
+//         }
 
-        relations {
-            requiredDependency "architectury-api"
-        }
-    }
-}
+//         relations {
+//             requiredDependency "architectury-api"
+//         }
+//     }
+// }
