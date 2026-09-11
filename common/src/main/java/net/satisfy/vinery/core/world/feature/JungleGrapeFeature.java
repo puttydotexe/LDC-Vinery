@@ -3,7 +3,8 @@ package net.satisfy.vinery.core.world.feature;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.ChunkPos;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -14,7 +15,10 @@ import net.satisfy.vinery.core.block.GrapeVineBlock;
 
 public class JungleGrapeFeature extends Feature<BlockStateConfiguration> {
 
-
+    private static final int PLACEMENT_ATTEMPTS = 12;
+    private static final int HORIZONTAL_RANGE = 7;
+    private static final int VERTICAL_RANGE = 10;
+    private static final int MAX_VINE_LENGTH = 12;
 
     public JungleGrapeFeature(Codec<BlockStateConfiguration> codec) {
         super(codec);
@@ -22,64 +26,86 @@ public class JungleGrapeFeature extends Feature<BlockStateConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<BlockStateConfiguration> context) {
+        WorldGenLevel level = context.level();
+        RandomSource random = context.random();
 
-        int tries = 12;
+        BlockPos origin = context.origin();
+        BlockState vineState = context.config().state;
 
-        int xz = 7;
-        int height = 10;
+        BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos adjacentPosition = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos abovePosition = new BlockPos.MutableBlockPos();
 
-        int length = 12;
-
-
-
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
-        for(int i = 0; i < tries; i++) {
-            mutable.set(context.origin()).move(
-                    context.random().nextInt((xz * 2) + 1) - xz,
-                    context.random().nextInt(height) - 1,
-                    context.random().nextInt((xz * 2) + 1) - xz
+        for (int attempt = 0; attempt < PLACEMENT_ATTEMPTS; attempt++) {
+            position.set(
+                origin.getX() + random.nextInt(HORIZONTAL_RANGE * 2 + 1) - HORIZONTAL_RANGE,
+                origin.getY() + random.nextInt(VERTICAL_RANGE) - 1,
+                origin.getZ() + random.nextInt(HORIZONTAL_RANGE * 2 + 1) - HORIZONTAL_RANGE
             );
 
+            /* Skip this placement attempt if the randomly generated position is occupied. */
+            if (!level.isEmptyBlock(position)) { continue; }
 
-            if(!context.level().isEmptyBlock(mutable)) {
-                continue;
-            }
+            int chunkX = position.getX() >> 4;
+            int chunkZ = position.getZ() >> 4;
+            int targetY = position.getY() - getVineLength(random);
 
-            BlockPos.MutableBlockPos vineMutablePos = new BlockPos.MutableBlockPos().set(mutable);
-            ChunkPos currentChunkPos = ChunkPos.containing(vineMutablePos);
-            BlockState currentBlockstate;
-            BlockState aboveBlockstate;
+            /* Continue extending the vine downward until the target Y coordinate is reached. */
+            while (position.getY() >= targetY) {
+                /* Stop extending the vine if the current position is occupied. */
+                if (!level.isEmptyBlock(position)) { break; }
 
-            int maxLength = length - context.random().nextInt(context.random().nextInt(length) + 1);
-            int targetY = vineMutablePos.getY() - maxLength;
+                abovePosition.setWithOffset(position, Direction.UP);
 
-            for (; vineMutablePos.getY() >= targetY; vineMutablePos.move(Direction.DOWN)) {
-                if (context.level().isEmptyBlock(vineMutablePos)) {
-                    for (Direction direction : Direction.Plane.HORIZONTAL) {
-                        mutable.set(vineMutablePos).move(direction);
-                        ChunkPos newChunkPos = ChunkPos.containing(mutable);
+                BlockState aboveState = level.getBlockState(abovePosition);
 
-                        if(newChunkPos.x() != currentChunkPos.x() || newChunkPos.z() != currentChunkPos.z()) continue;
+                /* Check each horizontal direction for a valid block face to attach the vine to. */
+                for (Direction direction : Direction.Plane.HORIZONTAL) {
+                    adjacentPosition.setWithOffset(position, direction);
 
-                        currentBlockstate = context.config().state.setValue(GrapeVineBlock.getPropertyForFace(direction), true);
-                        aboveBlockstate = context.level().getBlockState(vineMutablePos.above());
+                    /* Skip directions that would cross into a neighbouring chunk. */
+                    if ((adjacentPosition.getX() >> 4) != chunkX || (adjacentPosition.getZ() >> 4) != chunkZ) { continue; }
 
-                        if (currentBlockstate.canSurvive(context.level(), vineMutablePos) && context.level().getBlockState(vineMutablePos.relative(direction)).getBlock() != Blocks.MOSS_CARPET) {
-                            context.level().setBlock(vineMutablePos, currentBlockstate.setValue(VineBlock.UP, aboveBlockstate.canOcclude()).setValue(GrapeVineBlock.AGE, context.random().nextInt(3)), 2);
-                            break;
-                        }
-                        else if (aboveBlockstate.is(context.config().state.getBlock())) {
-                            context.level().setBlock(vineMutablePos, aboveBlockstate.setValue(VineBlock.UP, false).setValue(GrapeVineBlock.AGE, context.random().nextInt(3)), 2);
-                            break;
-                        }
+                    BlockState adjacentState = level.getBlockState(adjacentPosition);
+                    BlockState candidateState = vineState.setValue(
+                        GrapeVineBlock.getPropertyForFace(direction),
+                        true
+                    );
+
+                    /* Ensure the vine has valid support and is not attached to moss carpet. */
+                    if (!adjacentState.is(Blocks.MOSS_CARPET) && candidateState.canSurvive(level, position)) {
+                        level.setBlock(
+                            position,
+                            candidateState
+                                .setValue(VineBlock.UP, aboveState.canOcclude())
+                                .setValue(GrapeVineBlock.AGE, random.nextInt(3)),
+                            2
+                        );
+                        break;
+                    }
+
+                    /* Continue the vine downward if the block above is another grape vine. */
+                    if (aboveState.is(vineState.getBlock())) {
+                        level.setBlock(
+                            position,
+                            aboveState
+                                .setValue(VineBlock.UP, false)
+                                .setValue(GrapeVineBlock.AGE, random.nextInt(3)),
+                            2
+                        );
+                        break;
                     }
                 }
-                else {
-                    break;
-                }
+
+                /* Move down one block for the next vine segment. */
+                position.move(Direction.DOWN);
             }
         }
 
         return true;
+    }
+
+    private static int getVineLength(RandomSource random) {
+        return MAX_VINE_LENGTH - random.nextInt(random.nextInt(MAX_VINE_LENGTH) + 1);
     }
 }

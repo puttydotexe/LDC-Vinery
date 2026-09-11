@@ -11,8 +11,8 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 
 public class VillagerUtil {
-    public VillagerUtil() {
-    }
+
+    public VillagerUtil() {}
 
     public interface TradeFactory {
         MerchantOffer getOffer(Entity entity, RandomSource random);

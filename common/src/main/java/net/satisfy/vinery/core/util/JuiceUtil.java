@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class JuiceUtil {
+
     public static final Map<TagKey<Item>, String> RED_JUICE_TAGS = new HashMap<>();
     public static final Map<TagKey<Item>, String> WHITE_JUICE_TAGS = new HashMap<>();
     public static final Map<Item, String> APPLE_JUICES = new HashMap<>();

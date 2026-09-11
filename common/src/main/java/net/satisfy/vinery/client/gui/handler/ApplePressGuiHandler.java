@@ -22,9 +22,13 @@ public class ApplePressGuiHandler extends AbstractContainerMenu {
 
     public ApplePressGuiHandler(int syncId, Inventory playerInventory, Container inventory, ContainerData delegate) {
         super(ScreenhandlerTypeRegistry.APPLE_PRESS_GUI_HANDLER.get(), syncId);
+
         checkContainerSize(inventory, 4);
+
         this.inventory = inventory;
+
         inventory.startOpen(playerInventory.player);
+
         this.propertyDelegate = delegate;
 
         this.addSlot(new Slot(inventory, 0, 44, 34));

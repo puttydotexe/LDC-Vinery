@@ -1,7 +1,6 @@
 package net.satisfy.vinery.platform.fabric;
 
 import me.shedaniel.autoconfig.AutoConfig;
-import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -9,12 +8,10 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.level.block.Block;
 import net.satisfy.vinery.core.Vinery;
 import net.satisfy.vinery.fabric.config.VineryFabricConfig;
 import net.satisfy.vinery.platform.PlatformHelper;
 
-import java.util.List;
 import java.util.function.Supplier;
 
 public class PlatformHelperImpl extends PlatformHelper {

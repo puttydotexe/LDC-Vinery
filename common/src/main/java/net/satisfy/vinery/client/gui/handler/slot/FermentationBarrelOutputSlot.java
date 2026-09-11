@@ -25,27 +25,34 @@ public class FermentationBarrelOutputSlot extends Slot {
 
     @Override
     public @NotNull ItemStack remove(int amount) {
+        /* Ensure we don't attempt to remove more items than the slot has. */
         if (this.hasItem()) {
             this.amount += Math.min(amount, this.getItem().getCount());
         }
+
         return super.remove(amount);
     }
 
     @Override
     public void onTake(Player player, ItemStack stack) {
         this.checkTakeAchievements(stack);
+
         super.onTake(player, stack);
     }
 
     @Override
     protected void onQuickCraft(ItemStack stack, int amount) {
         this.amount += amount;
+
         this.checkTakeAchievements(stack);
     }
 
     @Override
     protected void checkTakeAchievements(ItemStack stack) {
         stack.onCraftedBy(this.player, this.amount);
+
         if (this.player instanceof ServerPlayer && this.container instanceof FermentationBarrelBlockEntity && player.level() instanceof ServerLevel) this.amount = 0;
     }
 }
+
+// here putty

@@ -6,6 +6,9 @@ import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.stream.IntStream;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +36,7 @@ public interface ImplementedInventory extends WorldlyContainer {
     default boolean isEmpty() {
         for(int i = 0; i < this.getContainerSize(); ++i) {
             ItemStack stack = this.getItem(i);
+
             if (!stack.isEmpty()) {
                 return false;
             }
@@ -47,6 +51,7 @@ public interface ImplementedInventory extends WorldlyContainer {
 
     default @NotNull ItemStack removeItem(int slot, int count) {
         ItemStack result = ContainerHelper.removeItem(this.getItems(), slot, count);
+
         if (!result.isEmpty()) {
             this.setChanged();
         }
@@ -72,12 +77,7 @@ public interface ImplementedInventory extends WorldlyContainer {
     }
 
     default int @NotNull [] getSlotsForFace(Direction side) {
-        int[] result = new int[this.getItems().size()];
-
-        for(int i = 0; i < result.length; result[i] = i++) {
-        }
-
-        return result;
+        return IntStream.range(0, getItems().size()).toArray();
     }
 
     default boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction side) {

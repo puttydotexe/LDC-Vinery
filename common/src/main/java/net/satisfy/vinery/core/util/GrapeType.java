@@ -12,12 +12,15 @@ import java.util.function.Supplier;
 
 import static net.satisfy.vinery.core.registry.GrapeTypeRegistry.GRAPE_TYPE_TYPES;
 
+/* TODO: Replace this whole class with a Lombok @Data annotation class. */
 public class GrapeType implements Comparable<GrapeType>, StringRepresentable {
+
     public static final Codec<GrapeType> CODEC = RecordCodecBuilder.create(inst->inst.group(
-            Codec.STRING.fieldOf("id").forGetter(GrapeType::getId),
-            Codec.BOOL.fieldOf("lattice").forGetter(GrapeType::isLattice),
-            Codec.BOOL.fieldOf("red").forGetter(GrapeType::isRed)
+        Codec.STRING.fieldOf("id").forGetter(GrapeType::getId),
+        Codec.BOOL.fieldOf("lattice").forGetter(GrapeType::isLattice),
+        Codec.BOOL.fieldOf("red").forGetter(GrapeType::isRed)
     ).apply(inst,GrapeType::new));
+
     private final String id;
     private final boolean lattice;
     private final boolean red;
@@ -44,6 +47,7 @@ public class GrapeType implements Comparable<GrapeType>, StringRepresentable {
                 return type;
             }
         }
+
         return null;
     }
 
@@ -99,7 +103,9 @@ public class GrapeType implements Comparable<GrapeType>, StringRepresentable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+
         if (!(o instanceof GrapeType grapeType)) return false;
+
         return Objects.equals(id, grapeType.id);
     }
 }
